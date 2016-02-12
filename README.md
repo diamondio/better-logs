@@ -36,7 +36,7 @@ log.warn("This is a suspicious behaviour...");
 log.error("This is a failure!", err);
 ```
 
-For more about this awesome logger, [see the full docs](https://github.com/diamondio/log/wiki/Documentation)!
+For more about this awesome logger, [see the full docs](https://github.com/diamondio/log/wiki/Documentation).
 
 Contributions welcome!
 
