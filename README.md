@@ -12,3 +12,12 @@ In your code:
 ```js
 var log = require('diamond-log')('section');
 ```
+
+Somewhere at the beginning of your code:
+```js
+log.config({
+  "mode": "normal",
+  "hide": ["section1", "group"]
+  "overrideConsole": true
+})
+```
