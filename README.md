@@ -21,3 +21,16 @@ log.config({
   "overrideConsole": true
 })
 ```
+
+Then when you want to log stuff:
+```js
+log.info("This is a normal operation.", someVar1, someVar2, "strings");
+log.warn("This is a suspicious behaviour...");
+log.error("This is a failure!", err);
+```
+
+
+### Credits
+[Diamond Inc.](https://diamond.io)
+
+If you can think of cool things to contribute, please send us a PR!
