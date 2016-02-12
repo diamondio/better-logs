@@ -1,0 +1,28 @@
+{
+  "name": "lg",
+  "version": "0.0.1",
+  "description": "Really flexible and fast logger for web servers, applications and daemons",
+  "main": "log.js",
+  "scripts": {
+    "test": "mocha"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/diamondio/lg.git"
+  },
+  "keywords": [
+    "log",
+    "bunyan",
+    "morgan",
+    "server",
+    "logger",
+    "history",
+    "lg"
+  ],
+  "author": "Diamond Inc. <info@diamond.io>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/diamondio/lg/issues"
+  },
+  "homepage": "https://github.com/diamondio/lg"
+}
