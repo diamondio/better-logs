@@ -17,7 +17,14 @@ Somewhere at the beginning of your code:
 ```js
 log.config({
   mode: 'normal',
-  hide: ['section1', 'group']
+  modes: {
+    normal: ['section', 'web']
+  },
+  groups: {
+    web: ['http', 'server', 'json'],
+    useless: ['xml', 'polling']
+  },
+  hide: ['spam', 'useless']
   overrideConsole: true
 })
 ```
