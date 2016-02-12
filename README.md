@@ -41,6 +41,8 @@ For more about this awesome logger, [see the full docs](https://github.com/diamo
 Contributions welcome!
 
 ### Credits
-This library was initially made by the awesome team of engineers at [Diamond](https://diamond.io). If you haven't already, make sure you try us out!
+This library was initially made by the awesome team of engineers at [Diamond](https://diamond.io).
+
+If you haven't already, make sure you install Diamond!
 
 
