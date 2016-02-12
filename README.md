@@ -1,2 +1,14 @@
-# lg
-Really flexible and fast logger
+# Diamond Log!
+
+We've found this logger to be immensely useful and flexible for us when we develop and work. Hopefully you would find it useful as well!
+
+```bash
+npm install diamond-log
+```
+
+### Usage
+
+In your code:
+```js
+var log = require('diamond-log')('section');
+```
