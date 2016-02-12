@@ -38,8 +38,9 @@ log.error("This is a failure!", err);
 
 For more about this awesome logger, [see the full docs](https://github.com/diamondio/log/wiki/Documentation)!
 
+Contributions welcome!
 
 ### Credits
-[Diamond Inc.](https://diamond.io)
+This library was initially made by the awesome team of engineers at [Diamond](https://diamond.io). If you haven't already, make sure you try us out!
 
-If you can think of cool things to contribute, please send us a PR!
+
