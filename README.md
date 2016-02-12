@@ -1,9 +1,9 @@
-# Diamond Log!
+# diamond-log
 
 We've found this logger to be immensely useful and flexible for us when we develop and work. Hopefully you would find it useful as well!
 
 ```bash
-npm install diamond-log
+npm install --save diamond-log
 ```
 
 ### Usage
