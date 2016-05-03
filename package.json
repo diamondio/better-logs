@@ -1,14 +1,14 @@
 {
-  "name": "lg",
-  "version": "0.0.1",
+  "name": "better-log",
+  "version": "1.0.0",
   "description": "Really flexible and fast logger for web servers, applications and daemons",
-  "main": "log.js",
+  "main": "index.js",
   "scripts": {
     "test": "mocha"
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/diamondio/lg.git"
+    "url": "https://github.com/diamondio/better-log.git"
   },
   "keywords": [
     "log",
@@ -16,13 +16,12 @@
     "morgan",
     "server",
     "logger",
-    "history",
-    "lg"
+    "history"
   ],
   "author": "Diamond Inc. <info@diamond.io>",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/diamondio/lg/issues"
+    "url": "https://github.com/diamondio/better-log/issues"
   },
-  "homepage": "https://github.com/diamondio/lg"
+  "homepage": "https://github.com/diamondio/better-log"
 }
