@@ -1,5 +1,5 @@
 {
-  "name": "better-logger",
+  "name": "better-logs",
   "version": "1.0.0",
   "description": "Really flexible and fast logger for web servers, applications and daemons",
   "main": "index.js",
@@ -8,7 +8,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/diamondio/better-logger.git"
+    "url": "https://github.com/diamondio/better-logs.git"
   },
   "keywords": [
     "log",
@@ -21,7 +21,7 @@
   "author": "Diamond Inc. <info@diamond.io>",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/diamondio/better-logger/issues"
+    "url": "https://github.com/diamondio/better-logs/issues"
   },
-  "homepage": "https://github.com/diamondio/better-logger"
+  "homepage": "https://github.com/diamondio/better-logs"
 }
