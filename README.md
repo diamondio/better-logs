@@ -4,14 +4,14 @@ Better Logging for NodeJS
 We've found this logger to be immensely useful and flexible for us when we develop and work. Hopefully you would find it useful as well!
 
 ```bash
-npm install --save better-log
+npm install --save better-logger
 ```
 
 ### Usage
 
 In your code:
 ```js
-var log = require('better-log')('section');
+var log = require('better-logger')('section');
 ```
 
 Somewhere at the beginning of your code:
