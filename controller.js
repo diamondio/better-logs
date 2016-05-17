@@ -384,6 +384,5 @@ Controller.prototype.setOutput = function () {
 }
 
 Controller.prototype.morgan = morgan;
-Controller.morgan = morgan;
 
 module.exports = Controller;
