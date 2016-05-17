@@ -2,6 +2,7 @@ var util     = require('util');
 var path     = require('path');
 var isStream = require('is-stream');
 var datefmt  = require('dateformat');
+var extend   = require('deep-extend');
 
 var Readable  = require('stream').Readable;
 var BetterLog = require('./log');
@@ -40,7 +41,8 @@ Controller.prototype._dedupe = function (arr) {
 
 Controller.prototype._resolveArray = function (sectionsOrGroups) {
   if (!Array.isArray(sectionsOrGroups)) return [];
-  return [].concat.apply([], sectionsOrGroups.map(sectionOrGroup => this._resolve(sectionOrGroup)));
+  var self = this;
+  return [].concat.apply([], sectionsOrGroups.map(function (sectionOrGroup) { return self._resolve(sectionOrGroup) }));
 }
 
 Controller.prototype._resolve = function (sectionOrGroup) {
@@ -138,7 +140,7 @@ Controller.prototype._makeFormatter = function (format) {
         return x;
       })
     }
-    args = args.map(arg => {
+    args = args.map(function (arg) {
       if (typeof arg === 'object') {
         try {
           return util.inspect(arg, { depth: log.maxTraceDepth });
@@ -186,7 +188,7 @@ Controller.prototype._makeLog = function (type) {
     if (explicitHide) return;
     if (hideByDefault && !explicitShow) return;
 
-    var message = self.types[type].apply(Object.assign({ type }, log), arguments);
+    var message = self.types[type].apply(extend({ type: type }, log), arguments);
     this.push(message);
     self._pushMessage(section, type, message);
   }
@@ -194,48 +196,49 @@ Controller.prototype._makeLog = function (type) {
 
 Controller.prototype.create = function (section) {
   if (typeof section !== 'string') return null;
-  return new BetterLog({ section });
+  return new BetterLog({ section: section });
 }
 
 Controller.prototype.setOptions = function (opts) {
   if (typeof opts !== 'object') return;
+  var self = this;
   if (opts.groups) {
-    Object.keys(opts.groups).forEach(name => this.addGroup(name, opts.groups[name]))
+    Object.keys(opts.groups).forEach(function (name) { return self.addGroup(name, opts.groups[name]) })
   }
   if (opts.outputs) {
-    Object.keys(opts.outputs).forEach(name => this.setOutput(name, opts.outputs[name]))
+    Object.keys(opts.outputs).forEach(function (name) { return self.setOutput(name, opts.outputs[name]) })
   }
   if (opts.types) {
-    Object.keys(opts.types).forEach(name => this.addLogType(name, opts.types[name]))
+    Object.keys(opts.types).forEach(function (name) { return self.addLogType(name, opts.types[name]) })
   }
   if (opts.modes) {
-    Object.keys(opts.modes).forEach(name => this.addMode(name, opts.modes[name]))
+    Object.keys(opts.modes).forEach(function (name) { return self.addMode(name, opts.modes[name]) })
   }
   if (typeof opts.mode === 'string') {
-    if (this.modes[opts.mode]) {
-      this.mode = opts.mode;
+    if (self.modes[opts.mode]) {
+      self.mode = opts.mode;
     }
   }
   if (opts.overrideConsole !== undefined) {
-    this.overrideConsole = opts.overrideConsole;
-    if (this.overrideConsole) {
-      var consoleLog = this.create('console');
+    self.overrideConsole = opts.overrideConsole;
+    if (self.overrideConsole) {
+      var consoleLog = self.create('console');
       consoleLog.stackIndex = 2;
       consoleLog.resume();
-      Object.keys(_console).forEach(key => console[key] = function () { return consoleLog[key].apply(consoleLog, arguments) });
+      Object.keys(_console).forEach(function (key) { console[key] = function () { return consoleLog[key].apply(consoleLog, arguments) } });
     } else {
-      Object.keys(_console).forEach(key => console[key] = _console[key]);
+      Object.keys(_console).forEach(function (key) { console[key] = _console[key] });
     }
   }
   if (opts.showByDefault !== undefined) {
-    this.visible['_default'] = this.visible['_default'] || {};
-    this.visible['_default']['_default'] = opts.showByDefault;
+    self.visible['_default'] = self.visible['_default'] || {};
+    self.visible['_default']['_default'] = opts.showByDefault;
   }
   if (Array.isArray(opts.hide)) {
-    opts.hide.forEach(elem => this.setVisibility(elem, 'hide'))
+    opts.hide.forEach(function (elem) { self.setVisibility(elem, 'hide') })
   }
   if (Array.isArray(opts.show)) {
-    opts.show.forEach(elem => this.setVisibility(elem, 'show'))
+    opts.show.forEach(function (elem) { self.setVisibility(elem, 'show') })
   }
 }
 
@@ -244,15 +247,16 @@ Controller.prototype.setMode = function (newMode) {
 }
 
 Controller.prototype.setVisibility = function (input, setting) {
+  var self = this;
   var parts = input.split('/', 2);
   var sectionOrGroup = parts[0];
   var type = parts.length === 2 ? parts[1] : '_default';
-  this._resolve(sectionOrGroup).forEach(section => {
-    this.visible[section] = this.visible[section] || {};
+  self._resolve(sectionOrGroup).forEach(function (section) {
+    self.visible[section] = self.visible[section] || {};
     if (setting === 'show' || setting == 'hide') {
-      this.visible[section][type] = setting === 'show' ? true : false;
+      self.visible[section][type] = setting === 'show' ? true : false;
     } else {
-      delete this.visible[section][type];
+      delete self.visible[section][type];
     }
   })
 }
@@ -364,6 +368,7 @@ Controller.prototype.getOutputStream = function (section, type) {
 }
 
 Controller.prototype.setOutput = function () {
+  var self = this;
   if (arguments.length < 1 || arguments.length > 2) return false;
   if (arguments.length === 1 && !isStream.writable(arguments[0])) return false;
   if (arguments.length === 2 && (typeof arguments[0] !== 'string' || !isStream.writable(arguments[1]))) return false;
@@ -372,9 +377,9 @@ Controller.prototype.setOutput = function () {
   var parts = input.split('/', 2);
   var sectionOrGroup = parts[0];
   var type = parts.length === 2 ? parts[1] : '_default';
-  this._resolve(sectionOrGroup).forEach(section => {
-    this.outputs[section] = this.outputs[section] || {};
-    this.outputs[section][type] = outputStream;
+  self._resolve(sectionOrGroup).forEach(function (section) {
+    self.outputs[section] = self.outputs[section] || {};
+    self.outputs[section][type] = outputStream;
   })
 }
 
