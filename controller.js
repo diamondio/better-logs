@@ -34,9 +34,13 @@ function Controller (opts) {
 util.inherits(Controller, Readable)
 
 Controller.prototype._dedupe = function (arr) {
+  return Object.keys(this._objectify(arr));
+}
+
+Controller.prototype._objectify = function (arr) {
   var obj = {};
   arr.forEach(function (k) { obj[k] = true });
-  return Object.keys(obj);
+  return obj;
 }
 
 Controller.prototype._resolveArray = function (sectionsOrGroups) {
@@ -171,10 +175,10 @@ Controller.prototype._makeLog = function (type) {
     var explicitShow = (self._visible[section] && (self._visible[section]._default === true  || self._visible[section][type] === true));
 
     if (self._modes[self._mode]) {
-      if (self._modes[self._mode].hide && self._modes[self._mode].hide.indexOf(section) > -1) {
+      if (self._modes[self._mode].hide && self._modes[self._mode].hide[section]) {
         explicitHide = true;
       }
-      if (self._modes[self._mode].show && self._modes[self._mode].show.indexOf(section) > -1) {
+      if (self._modes[self._mode].show && self._modes[self._mode].show[section]) {
         explicitShow = true;
       }
       if (self._modes[self._mode].showByDefault === false) {
@@ -298,11 +302,12 @@ Controller.prototype.mode = function (modeName, modeOptions) {
     return this._mode = modeName;
   }
   if (typeof modeOptions !== 'object') return;
+  var existingMode = this._modes[modeName] || {};
   if (modeOptions.show) {
-    modeOptions.show = this._resolveArray(modeOptions.show);
+    extend(modeOptions.show, existingMode.show || {}, this._objectify(this._resolveArray(modeOptions.show)));
   }
   if (modeOptions.hide) {
-    modeOptions.hide = this._resolveArray(modeOptions.hide);
+    extend(modeOptions.hide, existingMode.hide || {}, this._objectify(this._resolveArray(modeOptions.hide)));
   }
   if (modeOptions.showByDefault !== undefined) {
     modeOptions.showByDefault = !!modeOptions.showByDefault;
