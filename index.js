@@ -18,8 +18,8 @@ var init = function (opts) {
         
       },
       types: {
-        log: "{{timestamp}}".grey + " info".cyan + " {{message}}".white + " ({{file}}:{{line}})".grey,
-        info: "{{timestamp}}".grey + " info".cyan + " {{message}}".white + " ({{file}}:{{line}})".grey,
+        log: "{{timestamp}}".grey + " info".cyan + " [{{section}}] {{message}}".white + " ({{file}}:{{line}})".grey,
+        info: "{{timestamp}}".grey + " info".cyan + " [{{section}}] {{message}}".white + " ({{file}}:{{line}})".grey,
         warn: "{{timestamp}}".grey + " warn".yellow + " [{{section}}] {{message}}".white + " [{{section}}] ({{file}}:{{line}})".grey,
         error: "{{timestamp}}".grey + " err!".red.bold + " [{{ section }}] {{message}}\n  {{method}} [{{section}}] ({{file}}:{{line}})\n{{stack}}".red,
         debug: "------------------------   debug   ------------------------\n({{section}}) {{file}}:{{line}}: {{message}}\n".yellow
