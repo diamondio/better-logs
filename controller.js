@@ -1,0 +1,390 @@
+var util     = require('util');
+var path     = require('path');
+var colors   = require('colors');
+var tracer   = require('tracer');
+var isStream = require('is-stream');
+var datefmt  = require('dateformat');
+
+var stream    = require('stream');
+var Readable  = stream.Readable;
+var Writable  = stream.Writable;
+var BetterLog = require('./log');
+var morgan    = require('./morgan');
+
+var _console = global.console;
+
+function Controller (opts) {
+  opts = opts || {};
+
+  Readable.call(this, opts);
+
+  this.mode = 'normal';
+  this.started = false;
+  this._unwritten = [];
+
+  this.groups = {};
+  this.types = {};
+  this.modes = {};
+
+  this.outputs = {}; // [section|_default][type|_default]
+  this.visible = {}; // [section|_default][type|_default]
+
+  this.dateformat = opts.dateformat || 'HH:MM:ss';
+
+  if (typeof opts === 'object') {
+    this.setOptions(opts);
+  }
+}
+
+util.inherits(Controller, Readable)
+
+Controller.prototype._dedupe = function (arr) {
+  var obj = {};
+  arr.forEach(function (k) { obj[k] = true });
+  return Object.keys(obj);
+}
+
+Controller.prototype._resolveArray = function (sectionsOrGroups) {
+  if (!Array.isArray(sectionsOrGroups)) return [];
+  return [].concat.apply([], sectionsOrGroups.map(sectionOrGroup => this._resolve(sectionOrGroup)));
+}
+
+Controller.prototype._resolve = function (sectionOrGroup) {
+  if (typeof sectionOrGroup !== 'string') return [];
+  if (this.groups[sectionOrGroup]) {
+    return this._resolveArray(this.groups[sectionOrGroup]);
+  }
+  return [sectionOrGroup];
+}
+
+Controller.prototype._read = function (n) {
+  this.started = true;
+  this._flush();
+}
+
+Controller.prototype._flush = function () {
+  if (this._unwritten.length) {
+    this.push(this._unwritten.join(''));
+    this._unwritten = [];
+  }
+}
+
+Controller.prototype._pushMessage = function (section, type, msg) {
+  var output = this.getOutputStream(section, type);
+  if (output) {
+    output.write(String(msg));
+  }
+  if (this.started) {
+    return this.push(msg);
+  }
+  this._unwritten.push(msg);
+}
+
+Controller.prototype._getStack = function (stackIndex) {
+  // get call stack, and analyze it
+  // get all file,method and line number
+  // https://github.com/v8/v8/wiki/Stack%20Trace%20API
+  var stackReg = /at\s+(.*)\s+\((.*):(\d*):(\d*)\)/i;
+  var stackReg2 = /at\s+()(.*):(\d*):(\d*)/i;
+  var stacklist = (new Error()).stack.split('\n').slice(3);
+  var s = stacklist[stackIndex];
+  var sp = stackReg.exec(s) || stackReg2.exec(s);
+  var stack = {};
+  if (sp && sp.length === 5) {
+    stack.fn = sp[1];
+    stack.path = sp[2];
+    stack.line = sp[3];
+    stack.pos = sp[4];
+    stack.file = path.basename(stack.path);
+    stack.stack = stacklist.join('\n');
+  }
+  return stack;
+}
+
+Controller.prototype._makeFormatter = function (format) {
+  var self = this;
+  var needStack = /{{(fn|path|line|pos|file|stack)}}/i.test(format);
+  return function () {
+    var log = this;
+    var output = format;
+    output = output.replace(/{{timestamp}}/gi, datefmt(self.dateformat));
+    output = output.replace(/{{type}}/gi, this.type);
+    output = output.replace(/{{section}}/gi, this.section);
+    if (needStack) {
+      var stack = self._getStack(log.stackIndex);
+      output = output.replace(/{{fn}}/gi, stack.fn);
+      output = output.replace(/{{path}}/gi, stack.path);
+      output = output.replace(/{{line}}/gi, stack.line);
+      output = output.replace(/{{pos}}/gi, stack.pos);
+      output = output.replace(/{{file}}/gi, stack.file);
+      output = output.replace(/{{stack}}/gi, stack.stack);
+    }
+    var args = Array.prototype.slice.call(arguments);
+    if (!args.length) return '';
+    if (typeof args[0] === 'string') {
+      var message = args.shift().replace(/%[sdjt]/g, function(x) {
+        if (!args.length) return x;
+        if (x === '%s') {
+          return String(args.shift());
+        }
+        if (x === '%d') {
+          return Number(args.shift());
+        }
+        if (x === '%j') {
+          try {
+            var obj = args.shift();
+            if (obj instanceof Error) {
+              return JSON.stringify(obj, ['message', 'stack', 'type', 'name']);
+            }
+            return JSON.stringify(obj);
+          } catch(e) {
+            return '[Circular]';
+          }
+        }
+        return x;
+      })
+    }
+    args = args.map(arg => {
+      if (typeof arg === 'object') {
+        try {
+          return util.inspect(arg, { depth: log.maxTraceDepth });
+        } catch(e) {
+          return '[Circular]';
+        }
+      }
+      return String(arg)
+    });
+    args.unshift(message);
+    output = output.replace(/{{message}}/gi, args.join(' '));
+    return output + "\n";
+  }
+}
+
+Controller.prototype._makeLog = function (type) {
+  if (typeof type !== 'string') return;
+  var self = this;
+  return function () {
+    var log = this;
+    var section = log.section;
+    if (typeof section !== 'string') return;
+    if (typeof self.types[type] !== 'function') return;
+    var visibility = self.visible[section]
+    
+    var hideByDefault = (self.visible['_default'] && self.visible['_default']['_default'] === false)
+    var explicitHide = (self.visible[section] && (self.visible[section]._default === false || self.visible[section][type] === false));
+    var explicitShow = (self.visible[section] && (self.visible[section]._default === true  || self.visible[section][type] === true));
+
+    if (self.modes[self.mode]) {
+      if (self.modes[self.mode].hide && self.modes[self.mode].hide.indexOf(section) > -1) {
+        explicitHide = true;
+      }
+      if (self.modes[self.mode].show && self.modes[self.mode].show.indexOf(section) > -1) {
+        explicitShow = true;
+      }
+      if (self.modes[self.mode].showByDefault === false) {
+        hideByDefault = true;
+      }
+      if (self.modes[self.mode].showByDefault === true) {
+        hideByDefault = false;
+      }
+    }
+
+    if (explicitHide) return;
+    if (hideByDefault && !explicitShow) return;
+
+    var message = self.types[type].apply(Object.assign({ type }, log), arguments);
+    this.push(message);
+    self._pushMessage(section, type, message);
+  }
+}
+
+Controller.prototype.create = function (section) {
+  if (typeof section !== 'string') return null;
+  return new BetterLog({ section });
+}
+
+Controller.prototype.setOptions = function (opts) {
+  if (typeof opts !== 'object') return;
+  if (opts.groups) {
+    Object.keys(opts.groups).forEach(name => this.addGroup(name, opts.groups[name]))
+  }
+  if (opts.outputs) {
+    Object.keys(opts.outputs).forEach(name => this.setOutput(name, opts.outputs[name]))
+  }
+  if (opts.types) {
+    Object.keys(opts.types).forEach(name => this.addLogType(name, opts.types[name]))
+  }
+  if (opts.modes) {
+    Object.keys(opts.modes).forEach(name => this.addMode(name, opts.modes[name]))
+  }
+  if (typeof opts.mode === 'string') {
+    if (this.modes[opts.mode]) {
+      this.mode = opts.mode;
+    }
+  }
+  if (opts.overrideConsole !== undefined) {
+    this.overrideConsole = opts.overrideConsole;
+    if (this.overrideConsole) {
+      var consoleLog = this.create('console');
+      consoleLog.stackIndex = 2;
+      consoleLog.resume();
+      Object.keys(_console).forEach(key => global.console[key] = function () { return consoleLog[key].apply(consoleLog, arguments) });
+    } else {
+      Object.keys(_console).forEach(key => global.console[key] = _console[key]);
+    }
+  }
+  if (opts.showByDefault !== undefined) {
+    this.visible['_default'] = this.visible['_default'] || {};
+    this.visible['_default']['_default'] = opts.showByDefault;
+  }
+  if (Array.isArray(opts.hide)) {
+    opts.hide.forEach(elem => this.setVisibility(elem, 'hide'))
+  }
+  if (Array.isArray(opts.show)) {
+    opts.show.forEach(elem => this.setVisibility(elem, 'show'))
+  }
+}
+
+Controller.prototype.setMode = function (newMode) {
+  this.mode = newMode;
+}
+
+Controller.prototype.setVisibility = function (input, setting) {
+  var parts = input.split('/', 2);
+  var sectionOrGroup = parts[0];
+  var type = parts.length === 2 ? parts[1] : '_default';
+  this._resolve(sectionOrGroup).forEach(section => {
+    this.visible[section] = this.visible[section] || {};
+    if (setting === 'show' || setting == 'hide') {
+      this.visible[section][type] = setting === 'show' ? true : false;
+    } else {
+      delete this.visible[section][type];
+    }
+  })
+}
+
+Controller.prototype.getModes = function () {
+  return Object.keys(this.modes);
+}
+
+Controller.prototype.getMode = function (modeName) {
+  if (typeof modeName !== 'string') return null;
+  if (this.modes[modeName]) {
+    return this.modes[modeName];
+  }
+  return null;
+}
+
+Controller.prototype.addMode = function (modeName, modeOptions) {
+  if (typeof modeName !== 'string') return;
+  if (typeof modeOptions !== 'object') return;
+  if (modeOptions.show) {
+    modeOptions.show = this._resolveArray(modeOptions.show);
+  }
+  if (modeOptions.hide) {
+    modeOptions.hide = this._resolveArray(modeOptions.hide);
+  }
+  if (modeOptions.showByDefault !== undefined) {
+    modeOptions.showByDefault = !!modeOptions.showByDefault;
+  }
+  this.modes[modeName] = modeOptions;
+}
+
+Controller.prototype.removeMode = function (modeName) {
+  if (typeof modeName !== 'string') return;
+  delete this.modes[modeName];
+
+}
+
+Controller.prototype.getGroups = function () {
+  return Object.keys(this.groups);
+}
+
+Controller.prototype.getGroup = function (groupName) {
+  if (typeof groupName !== 'string') return null;
+  if (this.groups[groupName]) {
+    return this.groups[groupName];
+  }
+  return null;
+}
+
+Controller.prototype.addGroup = function (groupName, groupSections) {
+  if (typeof groupName !== 'string') return;
+  if (!Array.isArray(groupSections)) return;
+  this.groups[groupName] = this._dedupe(groupSections);
+}
+
+Controller.prototype.removeGroup = function (groupName) {
+  if (typeof groupName !== 'string') return;
+  delete this.groups[groupName];
+}
+
+Controller.prototype.getLogTypes = function () {
+  return Object.keys(this.types);
+}
+
+Controller.prototype.getLogType = function (logTypeName) {
+  if (typeof logTypeName !== 'string') return '';
+  if (this.types[logTypeName]) {
+    return this.types[logTypeName];
+  }
+  return '';
+}
+
+Controller.prototype.addLogType = function (logTypeName, logFormatter) {
+  if (typeof logTypeName !== 'string') return;
+  if (typeof logFormatter === 'string') {
+    logFormatter = this._makeFormatter(logFormatter);
+  }
+  if (typeof logFormatter !== 'function') return;
+  this.types[logTypeName] = logFormatter;
+  BetterLog.prototype[logTypeName] = this._makeLog(logTypeName, logFormatter);
+}
+
+Controller.prototype.removeLogType = function (logTypeName) {
+  if (typeof logTypeName !== 'string') return;
+  delete BetterLog.prototype[logTypeName];
+  delete this.types[logTypeName];
+}
+
+Controller.prototype.getOutputStream = function (section, type) {
+  if (typeof section !== 'string') return null;
+  if (typeof type !== 'string') return null;
+  if (this.outputs[section]) {
+    if (this.outputs[section][type]) {
+      return this.outputs[section][type];
+    }
+    if (this.outputs[section]['_default']) {
+      return this.outputs[section]['_default'];
+    }
+  }
+  if (this.outputs['_default']) {
+    if (this.outputs['_default'][type]) {
+      return this.outputs['_default'][type];
+    }
+    if (this.outputs['_default']['_default']) {
+      return this.outputs['_default']['_default'];
+    }
+  }
+  return null;
+}
+
+Controller.prototype.setOutput = function () {
+  if (arguments.length < 1 || arguments.length > 2) return false;
+  if (arguments.length === 1 && !isStream.writable(arguments[0])) return false;
+  if (arguments.length === 2 && (typeof arguments[0] !== 'string' || !isStream.writable(arguments[1]))) return false;
+  var input = arguments.length === 1 ? '_default' : arguments[0];
+  var outputStream = arguments[arguments.length-1];
+  var parts = input.split('/', 2);
+  var sectionOrGroup = parts[0];
+  var type = parts.length === 2 ? parts[1] : '_default';
+  this._resolve(sectionOrGroup).forEach(section => {
+    this.outputs[section] = this.outputs[section] || {};
+    this.outputs[section][type] = outputStream;
+  })
+}
+
+Controller.prototype.morgan = morgan;
+Controller.morgan = morgan;
+
+module.exports = Controller;

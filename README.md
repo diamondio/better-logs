@@ -16,6 +16,7 @@ var log = require('better-logs')('section');
 
 Somewhere at the beginning of your code:
 ```js
+
 log.config({
   mode: 'normal',
   modes: {
