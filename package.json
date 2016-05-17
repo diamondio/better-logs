@@ -25,11 +25,9 @@
   },
   "homepage": "https://github.com/diamondio/better-logs",
   "dependencies": {
-    "better-config": "^1.0.2",
     "colors": "^1.1.2",
     "dateformat": "^1.0.12",
     "is-stream": "^1.1.0",
-    "morgan": "^1.7.0",
-    "tracer": "^0.8.3"
+    "morgan": "^1.7.0"
   }
 }

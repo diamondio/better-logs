@@ -1,6 +1,7 @@
 //
 //  Diamond Inc (c) 2016
 //
+var colors = require('colors');
 
 var Controller = require('./controller');
 var morgan     = require('./morgan');

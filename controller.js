@@ -1,13 +1,9 @@
 var util     = require('util');
 var path     = require('path');
-var colors   = require('colors');
-var tracer   = require('tracer');
 var isStream = require('is-stream');
 var datefmt  = require('dateformat');
 
-var stream    = require('stream');
-var Readable  = stream.Readable;
-var Writable  = stream.Writable;
+var Readable  = require('stream').Readable;
 var BetterLog = require('./log');
 var morgan    = require('./morgan');
 
@@ -28,8 +24,6 @@ function Controller (opts) {
 
   this.outputs = {}; // [section|_default][type|_default]
   this.visible = {}; // [section|_default][type|_default]
-
-  this.dateformat = opts.dateformat || 'HH:MM:ss';
 
   if (typeof opts === 'object') {
     this.setOptions(opts);
@@ -107,7 +101,7 @@ Controller.prototype._makeFormatter = function (format) {
   return function () {
     var log = this;
     var output = format;
-    output = output.replace(/{{timestamp}}/gi, datefmt(self.dateformat));
+    output = output.replace(/{{timestamp}}/gi, datefmt(log.dateformat));
     output = output.replace(/{{type}}/gi, this.type);
     output = output.replace(/{{section}}/gi, this.section);
     if (needStack) {
@@ -228,9 +222,9 @@ Controller.prototype.setOptions = function (opts) {
       var consoleLog = this.create('console');
       consoleLog.stackIndex = 2;
       consoleLog.resume();
-      Object.keys(_console).forEach(key => global.console[key] = function () { return consoleLog[key].apply(consoleLog, arguments) });
+      Object.keys(_console).forEach(key => console[key] = function () { return consoleLog[key].apply(consoleLog, arguments) });
     } else {
-      Object.keys(_console).forEach(key => global.console[key] = _console[key]);
+      Object.keys(_console).forEach(key => console[key] = _console[key]);
     }
   }
   if (opts.showByDefault !== undefined) {

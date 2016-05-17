@@ -1,14 +1,14 @@
-var util    = require('util');
-var stream    = require('stream');
-var Readable  = stream.Readable;
+var util     = require('util');
+var Readable = require('stream').Readable;
 
 function BetterLog (opts) {
 
   Readable.call(this, opts);
 
-  this.section = opts.section || 'general';
-  this.stackIndex = opts.stackIndex || 1;
+  this.section       = opts.section       || 'general';
+  this.stackIndex    = opts.stackIndex    || 1;
   this.maxTraceDepth = opts.maxTraceDepth || 20;
+  this.dateformat    = opts.dateformat    || 'yyyy-mm-dd HH:MM:ss';
   
   this.started = false;
   this._unwritten = [];
