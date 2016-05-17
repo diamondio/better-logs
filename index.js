@@ -10,7 +10,7 @@ var controller;
 var init = function (opts) {
   if (!controller) {
     controller = new Controller();
-    controller.setOptions({
+    controller.config({
       outputs: {
         _default: process.stdout
       },
@@ -39,7 +39,7 @@ var init = function (opts) {
     });
   }
   if (typeof opts === 'object') {
-    controller.setOptions(opts);
+    controller.config(opts);
   }
   return controller;
 }

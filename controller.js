@@ -15,19 +15,19 @@ function Controller (opts) {
 
   Readable.call(this, opts);
 
-  this.mode = 'normal';
-  this.started = false;
+  this._mode = 'normal';
+  this._started = false;
   this._unwritten = [];
 
-  this.groups = {};
-  this.types = {};
-  this.modes = {};
+  this._groups = {};
+  this._types = {};
+  this._modes = {};
 
-  this.outputs = {}; // [section|_default][type|_default]
-  this.visible = {}; // [section|_default][type|_default]
+  this._outputs = {}; // [section|_default][type|_default]
+  this._visible = {}; // [section|_default][type|_default]
 
   if (typeof opts === 'object') {
-    this.setOptions(opts);
+    this.config(opts);
   }
 }
 
@@ -47,14 +47,14 @@ Controller.prototype._resolveArray = function (sectionsOrGroups) {
 
 Controller.prototype._resolve = function (sectionOrGroup) {
   if (typeof sectionOrGroup !== 'string') return [];
-  if (this.groups[sectionOrGroup]) {
-    return this._resolveArray(this.groups[sectionOrGroup]);
+  if (this._groups[sectionOrGroup]) {
+    return this._resolveArray(this._groups[sectionOrGroup]);
   }
   return [sectionOrGroup];
 }
 
 Controller.prototype._read = function (n) {
-  this.started = true;
+  this._started = true;
   this._flush();
 }
 
@@ -66,11 +66,11 @@ Controller.prototype._flush = function () {
 }
 
 Controller.prototype._pushMessage = function (section, type, msg) {
-  var output = this.getOutputStream(section, type);
+  var output = this._getOutputStream(section, type);
   if (output) {
     output.write(String(msg));
   }
-  if (this.started) {
+  if (this._started) {
     return this.push(msg);
   }
   this._unwritten.push(msg);
@@ -163,24 +163,24 @@ Controller.prototype._makeLog = function (type) {
     var log = this;
     var section = log.section;
     if (typeof section !== 'string') return;
-    if (typeof self.types[type] !== 'function') return;
-    var visibility = self.visible[section]
+    if (typeof self._types[type] !== 'function') return;
+    var visibility = self._visible[section]
     
-    var hideByDefault = (self.visible['_default'] && self.visible['_default']['_default'] === false)
-    var explicitHide = (self.visible[section] && (self.visible[section]._default === false || self.visible[section][type] === false));
-    var explicitShow = (self.visible[section] && (self.visible[section]._default === true  || self.visible[section][type] === true));
+    var hideByDefault = (self._visible['_default'] && self._visible['_default']['_default'] === false)
+    var explicitHide = (self._visible[section] && (self._visible[section]._default === false || self._visible[section][type] === false));
+    var explicitShow = (self._visible[section] && (self._visible[section]._default === true  || self._visible[section][type] === true));
 
-    if (self.modes[self.mode]) {
-      if (self.modes[self.mode].hide && self.modes[self.mode].hide.indexOf(section) > -1) {
+    if (self._modes[self._mode]) {
+      if (self._modes[self._mode].hide && self._modes[self._mode].hide.indexOf(section) > -1) {
         explicitHide = true;
       }
-      if (self.modes[self.mode].show && self.modes[self.mode].show.indexOf(section) > -1) {
+      if (self._modes[self._mode].show && self._modes[self._mode].show.indexOf(section) > -1) {
         explicitShow = true;
       }
-      if (self.modes[self.mode].showByDefault === false) {
+      if (self._modes[self._mode].showByDefault === false) {
         hideByDefault = true;
       }
-      if (self.modes[self.mode].showByDefault === true) {
+      if (self._modes[self._mode].showByDefault === true) {
         hideByDefault = false;
       }
     }
@@ -188,10 +188,47 @@ Controller.prototype._makeLog = function (type) {
     if (explicitHide) return;
     if (hideByDefault && !explicitShow) return;
 
-    var message = self.types[type].apply(extend({ type: type }, log), arguments);
+    var message = self._types[type].apply(extend({ type: type }, log), arguments);
     this.push(message);
     self._pushMessage(section, type, message);
   }
+}
+
+Controller.prototype._getOutputStream = function (section, type) {
+  if (typeof section !== 'string') return null;
+  if (typeof type !== 'string') return null;
+  if (this._outputs[section]) {
+    if (this._outputs[section][type]) {
+      return this._outputs[section][type];
+    }
+    if (this._outputs[section]['_default']) {
+      return this._outputs[section]['_default'];
+    }
+  }
+  if (this._outputs['_default']) {
+    if (this._outputs['_default'][type]) {
+      return this._outputs['_default'][type];
+    }
+    if (this._outputs['_default']['_default']) {
+      return this._outputs['_default']['_default'];
+    }
+  }
+  return null;
+}
+
+Controller.prototype._setVisibility = function (input, setting) {
+  var self = this;
+  var parts = input.split('/', 2);
+  var sectionOrGroup = parts[0];
+  var type = parts.length === 2 ? parts[1] : '_default';
+  self._resolve(sectionOrGroup).forEach(function (section) {
+    self._visible[section] = self._visible[section] || {};
+    if (setting === 'show' || setting == 'hide') {
+      self._visible[section][type] = setting === 'show' ? true : false;
+    } else {
+      delete self._visible[section][type];
+    }
+  })
 }
 
 Controller.prototype.create = function (section) {
@@ -199,24 +236,24 @@ Controller.prototype.create = function (section) {
   return new BetterLog({ section: section });
 }
 
-Controller.prototype.setOptions = function (opts) {
+Controller.prototype.config = function (opts) {
   if (typeof opts !== 'object') return;
   var self = this;
   if (opts.groups) {
-    Object.keys(opts.groups).forEach(function (name) { return self.addGroup(name, opts.groups[name]) })
+    Object.keys(opts.groups).forEach(function (name) { return self.group(name, opts.groups[name]) })
   }
   if (opts.outputs) {
-    Object.keys(opts.outputs).forEach(function (name) { return self.setOutput(name, opts.outputs[name]) })
+    Object.keys(opts.outputs).forEach(function (name) { return self.output(name, opts.outputs[name]) })
   }
   if (opts.types) {
-    Object.keys(opts.types).forEach(function (name) { return self.addLogType(name, opts.types[name]) })
+    Object.keys(opts.types).forEach(function (name) { return self.type(name, opts.types[name]) })
   }
   if (opts.modes) {
-    Object.keys(opts.modes).forEach(function (name) { return self.addMode(name, opts.modes[name]) })
+    Object.keys(opts.modes).forEach(function (name) { return self.mode(name, opts.modes[name]) })
   }
   if (typeof opts.mode === 'string') {
-    if (self.modes[opts.mode]) {
-      self.mode = opts.mode;
+    if (self._modes[opts.mode]) {
+      self._mode = opts.mode;
     }
   }
   if (opts.overrideConsole !== undefined) {
@@ -231,50 +268,35 @@ Controller.prototype.setOptions = function (opts) {
     }
   }
   if (opts.showByDefault !== undefined) {
-    self.visible['_default'] = self.visible['_default'] || {};
-    self.visible['_default']['_default'] = opts.showByDefault;
+    self._visible['_default'] = self._visible['_default'] || {};
+    self._visible['_default']['_default'] = opts.showByDefault;
   }
   if (Array.isArray(opts.hide)) {
-    opts.hide.forEach(function (elem) { self.setVisibility(elem, 'hide') })
+    opts.hide.forEach(function (elem) { self._setVisibility(elem, 'hide') })
   }
   if (Array.isArray(opts.show)) {
-    opts.show.forEach(function (elem) { self.setVisibility(elem, 'show') })
+    opts.show.forEach(function (elem) { self._setVisibility(elem, 'show') })
   }
+  return self;
 }
 
-Controller.prototype.setMode = function (newMode) {
-  this.mode = newMode;
+Controller.prototype.modes = function () {
+  return Object.keys(this._modes);
 }
 
-Controller.prototype.setVisibility = function (input, setting) {
-  var self = this;
-  var parts = input.split('/', 2);
-  var sectionOrGroup = parts[0];
-  var type = parts.length === 2 ? parts[1] : '_default';
-  self._resolve(sectionOrGroup).forEach(function (section) {
-    self.visible[section] = self.visible[section] || {};
-    if (setting === 'show' || setting == 'hide') {
-      self.visible[section][type] = setting === 'show' ? true : false;
-    } else {
-      delete self.visible[section][type];
-    }
-  })
+Controller.prototype.show = function (sectionOrGroup) {
+  return this._setVisibility(sectionOrGroup, 'show');
 }
 
-Controller.prototype.getModes = function () {
-  return Object.keys(this.modes);
+Controller.prototype.hide = function (sectionOrGroup) {
+  return this._setVisibility(sectionOrGroup, 'hide');
 }
 
-Controller.prototype.getMode = function (modeName) {
-  if (typeof modeName !== 'string') return null;
-  if (this.modes[modeName]) {
-    return this.modes[modeName];
-  }
-  return null;
-}
-
-Controller.prototype.addMode = function (modeName, modeOptions) {
+Controller.prototype.mode = function (modeName, modeOptions) {
   if (typeof modeName !== 'string') return;
+  if (!modeOptions) {
+    return this._mode = modeName;
+  }
   if (typeof modeOptions !== 'object') return;
   if (modeOptions.show) {
     modeOptions.show = this._resolveArray(modeOptions.show);
@@ -285,89 +307,48 @@ Controller.prototype.addMode = function (modeName, modeOptions) {
   if (modeOptions.showByDefault !== undefined) {
     modeOptions.showByDefault = !!modeOptions.showByDefault;
   }
-  this.modes[modeName] = modeOptions;
+  this._modes[modeName] = modeOptions;
 }
 
 Controller.prototype.removeMode = function (modeName) {
   if (typeof modeName !== 'string') return;
-  delete this.modes[modeName];
-
+  delete this._modes[modeName];
 }
 
-Controller.prototype.getGroups = function () {
-  return Object.keys(this.groups);
-}
-
-Controller.prototype.getGroup = function (groupName) {
-  if (typeof groupName !== 'string') return null;
-  if (this.groups[groupName]) {
-    return this.groups[groupName];
-  }
-  return null;
-}
-
-Controller.prototype.addGroup = function (groupName, groupSections) {
+Controller.prototype.group = function (groupName, groupSections) {
   if (typeof groupName !== 'string') return;
+  if (!groupSections) return this._groups[groupName] || null;
   if (!Array.isArray(groupSections)) return;
-  this.groups[groupName] = this._dedupe(groupSections);
+  this._groups[groupName] = this._dedupe(groupSections);
 }
 
 Controller.prototype.removeGroup = function (groupName) {
   if (typeof groupName !== 'string') return;
-  delete this.groups[groupName];
+  delete this._groups[groupName];
 }
 
-Controller.prototype.getLogTypes = function () {
-  return Object.keys(this.types);
+Controller.prototype.types = function () {
+  return Object.keys(this._types);
 }
 
-Controller.prototype.getLogType = function (logTypeName) {
-  if (typeof logTypeName !== 'string') return '';
-  if (this.types[logTypeName]) {
-    return this.types[logTypeName];
-  }
-  return '';
-}
-
-Controller.prototype.addLogType = function (logTypeName, logFormatter) {
+Controller.prototype.type = function (logTypeName, logFormatter) {
   if (typeof logTypeName !== 'string') return;
+  if (!logFormatter) return this._types[logTypeName] || '';
   if (typeof logFormatter === 'string') {
     logFormatter = this._makeFormatter(logFormatter);
   }
   if (typeof logFormatter !== 'function') return;
-  this.types[logTypeName] = logFormatter;
+  this._types[logTypeName] = logFormatter;
   BetterLog.prototype[logTypeName] = this._makeLog(logTypeName, logFormatter);
 }
 
-Controller.prototype.removeLogType = function (logTypeName) {
+Controller.prototype.removeType = function (logTypeName) {
   if (typeof logTypeName !== 'string') return;
   delete BetterLog.prototype[logTypeName];
-  delete this.types[logTypeName];
+  delete this._types[logTypeName];
 }
 
-Controller.prototype.getOutputStream = function (section, type) {
-  if (typeof section !== 'string') return null;
-  if (typeof type !== 'string') return null;
-  if (this.outputs[section]) {
-    if (this.outputs[section][type]) {
-      return this.outputs[section][type];
-    }
-    if (this.outputs[section]['_default']) {
-      return this.outputs[section]['_default'];
-    }
-  }
-  if (this.outputs['_default']) {
-    if (this.outputs['_default'][type]) {
-      return this.outputs['_default'][type];
-    }
-    if (this.outputs['_default']['_default']) {
-      return this.outputs['_default']['_default'];
-    }
-  }
-  return null;
-}
-
-Controller.prototype.setOutput = function () {
+Controller.prototype.output = function () {
   var self = this;
   if (arguments.length < 1 || arguments.length > 2) return false;
   if (arguments.length === 1 && !isStream.writable(arguments[0])) return false;
@@ -378,8 +359,8 @@ Controller.prototype.setOutput = function () {
   var sectionOrGroup = parts[0];
   var type = parts.length === 2 ? parts[1] : '_default';
   self._resolve(sectionOrGroup).forEach(function (section) {
-    self.outputs[section] = self.outputs[section] || {};
-    self.outputs[section][type] = outputStream;
+    self._outputs[section] = self._outputs[section] || {};
+    self._outputs[section][type] = outputStream;
   })
 }
 
