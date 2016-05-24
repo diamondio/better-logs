@@ -7,7 +7,6 @@ var BetterLog = require('../log');
 // Output to /dev/null
 var VOID = new (stream.Writable)();
 VOID._write = function(){};
-VOID._writev = function(c,cb){cb()};
 
 // Helper functions
 function isNumeric(n) {
@@ -116,6 +115,8 @@ describe('Customizations', function () {
 
     before(function () {
       var logs = BetterLogs();
+      logs.format('simple', '{{message}}')
+      logs.format('alternative', '{{message}}')
       logs.output(VOID);
     })
 
@@ -168,6 +169,8 @@ describe('Customizations', function () {
 
     before(function () {
       var logs = BetterLogs();
+      logs.format('simple', '{{message}}');
+      logs.format('alternative', '{{message}}');
       logs.output(VOID);
       this.logs = logs;
     })
@@ -180,31 +183,154 @@ describe('Customizations', function () {
         assert.equal(written, 'a\n');
         done();
       };
-      output._writev = function(c,cb){cb()};
       log.output('testSectionOutput', output);
       log.simple('a');
     })
 
-    it('should set section/type output', function () {
+    it('should set section/type output', function (done) {
+      var log = BetterLogs('testSectionTypeOutput');
+      var outputSimple = new (stream.Writable)();
+      var outputDefault = new (stream.Writable)();
+      outputSimple._write = function (msg) {
+        var written = new Buffer(msg).toString();
+        assert.equal(written, 'a\n');
+      };
+      outputDefault._write = function (msg) {
+        var written = new Buffer(msg).toString();
+        assert.equal(written, 'b\n');
+        done();
+      };
+      log.output('testSectionTypeOutput', outputDefault);
+      log.output('testSectionTypeOutput/simple', outputSimple);
+      log.simple('a');
+      log.alternative('b');
     })
 
   })
 
   describe('show and hide', function () {
 
-    it('should show/hide by default', function () {
+    before(function () {
+      var logs = BetterLogs();
+      logs.format('simple', '{{message}}');
+      logs.format('simple1', '{{message}}');
+      logs.format('simple2', '{{message}}');
+      logs.format('simple3', '{{message}}');
+      logs.output(VOID);
+      this.logs = logs;
     })
 
-    it('should show/hide section', function () {
+    it('by default', function (done) {
+      var log = BetterLogs('testShowDefault');
+      var writes = 0;
+      log.on('data', function (msg) {
+        writes++;
+        var written = new Buffer(msg).toString();
+        if (writes === 1) {
+          assert.equal(written, 'a\n');
+        }
+        if (writes === 2) {
+          assert.equal(written, 'c\n');
+          done();
+        }
+      });
+      log.simple('a');
+      log.config({ showByDefault: false })
+      log.simple('b');
+      log.config({ showByDefault: true })
+      log.simple('c');
     })
 
-    it('should show/hide section/type', function () {
+    it('section', function (done) {
+      var log = BetterLogs('testShowSection');
+      var writes = 0;
+      log.on('data', function (msg) {
+        writes++;
+        var written = new Buffer(msg).toString();
+        if (writes === 1) {
+          assert.equal(written, 'b\n');
+        }
+        if (writes === 2) {
+          assert.equal(written, 'e\n');
+          done();
+        }
+      });
+      log.config({ showByDefault: false })
+      log.show('testShowSection')
+      log.simple('b');
+      log.hide('testShowSection')
+      log.simple('c');
+      log.config({ showByDefault: true })
+      log.hide('testShowSection')
+      log.simple('d');
+      log.show('testShowSection')
+      log.simple('e');
     })
 
-    it('should show/hide groups', function () {
+    it('section/type', function (done) {
+      var log = BetterLogs('testShowSectionType');
+      var writes = 0;
+      log.on('data', function (msg) {
+        writes++;
+        var written = new Buffer(msg).toString();
+        if (writes === 1) {
+          assert.equal(written, 'b\n');
+        }
+        if (writes === 2) {
+          assert.equal(written, 'd\n');
+        }
+        if (writes === 3) {
+          assert.equal(written, 'e\n');
+          done();
+        }
+      });
+      log.hide('testShowSectionType')
+      log.simple1('a');
+      log.show('testShowSectionType')
+      log.simple1('b');
+      log.hide('testShowSectionType')
+      log.show('testShowSectionType/simple2')
+      log.simple1('c');
+      log.simple2('d');
+      log.reset('testShowSectionType/simple2')
+      log.show('testShowSectionType')
+      log.hide('_default/simple2')
+      log.simple2('f');
+      log.simple1('e');
     })
 
-    it('should show/hide groups within groups', function () {
+    it('groups', function (done) {
+      var log = BetterLogs('testShowGroups');
+      log.group('group1', ['section1', 'section2', 'testShowGroups']);
+      log.group('group2', ['section3', 'section4']);
+      var writes = 0;
+      log.on('data', function (msg) {
+        writes++;
+        var written = new Buffer(msg).toString();
+        if (writes === 1) {
+          assert.equal(written, 'b\n');
+        }
+        if (writes === 2) {
+          assert.equal(written, 'd\n');
+        }
+        if (writes === 3) {
+          assert.equal(written, 'f\n');
+          done();
+        }
+      });
+      log.hide('group1')
+      log.simple1('a');
+      log.show('group1')
+      log.simple1('b');
+      log.hide('group1')
+      log.show('group1/simple2')
+      log.simple1('c');
+      log.simple2('d');
+      log.show('group2')
+      log.hide('group2/simple2')
+      log.simple1('e');
+      log.hide('group2/group1')
+      log.simple2('f');
     })
 
   })
@@ -221,9 +347,6 @@ describe('Customizations', function () {
     })
 
     it('should show/hide groups', function () {
-    })
-
-    it('should show/hide groups within groups', function () {
     })
 
   })

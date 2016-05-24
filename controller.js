@@ -149,31 +149,53 @@ Controller.prototype._makeLog = function (type) {
     var section = log.section;
     if (typeof section !== 'string') return;
     if (typeof self._formats[type] !== 'function') return;
-    var visibility = self._visible[section]
+
+    self._visible['_default'] = self._visible['_default'] || {};
+    self._visible[section] = self._visible[section] || {};
     
-    var hideByDefault = (self._visible['_default'] && self._visible['_default']['_default'] === false)
-    var explicitHide = (self._visible[section] && (self._visible[section]._default === false || self._visible[section][type] === false));
-    var explicitShow = (self._visible[section] && (self._visible[section]._default === true  || self._visible[section][type] === true));
+    var score = 0;
+    var hideByDefault = (self._visible['_default']['_default'] === false);
+    var hideSection = (self._visible[section]._default === false);
+    var showSection = (self._visible[section]._default === true);
+    var hideType = (self._visible['_default'][type] === false);
+    var showType = (self._visible['_default'][type] === true);
+    var shouldHide = (self._visible[section][type] === false);
+    var shouldShow = (self._visible[section][type] === true);
+
 
     if (self._modes[self._mode]) {
-      if (self._modes[self._mode].hide && self._modes[self._mode].hide[section]) {
-        explicitHide = true;
+      self._modes[self._mode].hide = self._modes[self._mode].hide || {};
+      self._modes[self._mode].show = self._modes[self._mode].show || {};
+      if (self._modes[self._mode].showByDefault !== undefined) {
+        hideByDefault = (self._modes[self._mode].showByDefault === false);
       }
-      if (self._modes[self._mode].show && self._modes[self._mode].show[section]) {
-        explicitShow = true;
+      if (self._modes[self._mode].hide[section] !== undefined) {
+        hideSection = (self._modes[self._mode].hide[section] === true);
       }
-      if (self._modes[self._mode].showByDefault === false) {
-        hideByDefault = true;
+      if (self._modes[self._mode].show[section] !== undefined) {
+        showSection = (self._modes[self._mode].show[section] === true);
       }
-      if (self._modes[self._mode].showByDefault === true) {
-        hideByDefault = false;
+      if (self._modes[self._mode].hide[type] !== undefined) {
+        hideType = (self._modes[self._mode].hide[type] === true);
+      }
+      if (self._modes[self._mode].show[type] !== undefined) {
+        showType = (self._modes[self._mode].show[type] === true);
       }
     }
 
-    if (explicitHide) return;
-    if (hideByDefault && !explicitShow) return;
+    score += (hideByDefault ? -1 : 1);
+    score += (showType ? 100 : 0);
+    score += (hideType ? -100 : 0);
+    score += (showSection ? 10 : 0);
+    score += (hideSection ? -10 : 0);
+    score += (shouldShow ? 1000 : 0);
+    score += (shouldHide ? -1000 : 0);
 
+    // console.log(section, type, '\n', hideByDefault, 'score:', score)
+
+    if (score < 0) return;
     var message = self._formats[type].apply(extend({ logType: type }, _.pick(log, ['dateformat', 'section', 'stackIndex', 'maxTraceDepth'])), arguments);
+    // console.log('writing', message)
     this.push(message);
     self._writeToOutput(section, type, message);
   }
@@ -282,6 +304,10 @@ Controller.prototype.show = function (sectionOrGroup) {
 
 Controller.prototype.hide = function (sectionOrGroup) {
   return this._setVisibility(sectionOrGroup, 'hide');
+}
+
+Controller.prototype.reset = function (sectionOrGroup) {
+  return this._setVisibility(sectionOrGroup, 'inherit');
 }
 
 Controller.prototype.mode = function (modeName, modeOptions) {
