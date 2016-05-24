@@ -3,6 +3,9 @@ var stream = require('stream');
 var isStream = require('is-stream');
 var BetterLogs = require('../');
 
+var VOID = new (stream.Writable)();
+VOID._write = function(){};
+
 describe('API', function () {
 
   describe('controller', function () {
@@ -78,6 +81,42 @@ describe('API', function () {
       assert.ok(logs.modes().indexOf('silent') > -1)
       assert.ok(logs.modes().indexOf('normal') > -1)
       assert.ok(logs.modes().indexOf('verbose') > -1)
+    })
+
+  })
+
+  describe('reset', function () {
+
+    before(function () {
+      var logs = BetterLogs();
+      logs.format('simple', '{{message}}');
+      logs.format('alternative', '{{message}}');
+      logs.output(VOID);
+      this.logs = logs;
+    })
+
+    it('should reset', function (done) {
+      var log = BetterLogs('testReset');
+      var writes = 0;
+      log.on('data', function (msg) {
+        writes++;
+        var written = new Buffer(msg).toString();
+        if (writes === 1) {
+          assert.equal(written, 'b\n');
+        }
+        if (writes === 2) {
+          assert.equal(written, 'd\n');
+          done();
+        }
+      });
+      log.hide('testReset')
+      log.simple('a');
+      log.reset('testReset')
+      log.simple('b');
+      log.hide('testReset')
+      log.simple('c');
+      log.reset()
+      log.simple('d');
     })
 
   })

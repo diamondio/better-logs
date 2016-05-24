@@ -207,11 +207,7 @@ describe('Customizations', function () {
     })
 
   })
-
-  describe('reset', function () {
-    // TODO
-  })
-
+  
   describe('show and hide', function () {
 
     before(function () {
