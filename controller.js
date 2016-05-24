@@ -1,10 +1,10 @@
+var _        = require('lodash');
 var util     = require('util');
 var path     = require('path');
 var isStream = require('is-stream');
 var datefmt  = require('dateformat');
 var extend   = require('deep-extend');
 
-var Readable  = require('stream').Readable;
 var BetterLog = require('./log');
 var morgan    = require('./morgan');
 
@@ -13,14 +13,11 @@ var _console = extend({}, console);
 function Controller (opts) {
   opts = opts || {};
 
-  Readable.call(this, opts);
-
   this._mode = 'normal';
-  this._started = false;
   this._unwritten = [];
 
   this._groups = {};
-  this._types = {};
+  this._formats = {};
   this._modes = {};
 
   this._outputs = {}; // [section|_default][type|_default]
@@ -30,8 +27,6 @@ function Controller (opts) {
     this.config(opts);
   }
 }
-
-util.inherits(Controller, Readable)
 
 Controller.prototype._dedupe = function (arr) {
   return Object.keys(this._objectify(arr));
@@ -57,27 +52,11 @@ Controller.prototype._resolve = function (sectionOrGroup) {
   return [sectionOrGroup];
 }
 
-Controller.prototype._read = function (n) {
-  this._started = true;
-  this._flush();
-}
-
-Controller.prototype._flush = function () {
-  if (this._unwritten.length) {
-    this.push(this._unwritten.join(''));
-    this._unwritten = [];
-  }
-}
-
-Controller.prototype._pushMessage = function (section, type, msg) {
+Controller.prototype._writeToOutput = function (section, type, msg) {
   var output = this._getOutputStream(section, type);
   if (output) {
     output.write(String(msg));
   }
-  if (this._started) {
-    return this.push(msg);
-  }
-  this._unwritten.push(msg);
 }
 
 Controller.prototype._getStack = function (stackIndex) {
@@ -108,7 +87,7 @@ Controller.prototype._makeFormatter = function (format) {
     var log = this;
     var output = format;
     output = output.replace(/{{timestamp}}/gi, datefmt(log.dateformat));
-    output = output.replace(/{{type}}/gi, this.type);
+    output = output.replace(/{{type}}/gi, this.logType);
     output = output.replace(/{{section}}/gi, this.section);
     if (needStack) {
       var stack = self._getStack(log.stackIndex);
@@ -154,7 +133,9 @@ Controller.prototype._makeFormatter = function (format) {
       }
       return String(arg)
     });
-    args.unshift(message);
+    if (message !== undefined) {
+      args.unshift(message);
+    }
     output = output.replace(/{{message}}/gi, args.join(' '));
     return output + "\n";
   }
@@ -167,7 +148,7 @@ Controller.prototype._makeLog = function (type) {
     var log = this;
     var section = log.section;
     if (typeof section !== 'string') return;
-    if (typeof self._types[type] !== 'function') return;
+    if (typeof self._formats[type] !== 'function') return;
     var visibility = self._visible[section]
     
     var hideByDefault = (self._visible['_default'] && self._visible['_default']['_default'] === false)
@@ -192,9 +173,9 @@ Controller.prototype._makeLog = function (type) {
     if (explicitHide) return;
     if (hideByDefault && !explicitShow) return;
 
-    var message = self._types[type].apply(extend({ type: type }, log), arguments);
+    var message = self._formats[type].apply(extend({ logType: type }, _.pick(log, ['dateformat', 'section', 'stackIndex', 'maxTraceDepth'])), arguments);
     this.push(message);
-    self._pushMessage(section, type, message);
+    self._writeToOutput(section, type, message);
   }
 }
 
@@ -237,7 +218,9 @@ Controller.prototype._setVisibility = function (input, setting) {
 
 Controller.prototype.create = function (section) {
   if (typeof section !== 'string') return null;
-  return new BetterLog({ section: section });
+  var log = new BetterLog({ section: section });
+  Object.keys(this).forEach(key => log[key] = this[key]);
+  return log;
 }
 
 Controller.prototype.config = function (opts) {
@@ -249,8 +232,8 @@ Controller.prototype.config = function (opts) {
   if (opts.outputs) {
     Object.keys(opts.outputs).forEach(function (name) { return self.output(name, opts.outputs[name]) })
   }
-  if (opts.types) {
-    Object.keys(opts.types).forEach(function (name) { return self.type(name, opts.types[name]) })
+  if (opts.formats) {
+    Object.keys(opts.formats).forEach(function (name) { return self.format(name, opts.formats[name]) })
   }
   if (opts.modes) {
     Object.keys(opts.modes).forEach(function (name) { return self.mode(name, opts.modes[name]) })
@@ -337,25 +320,25 @@ Controller.prototype.removeGroup = function (groupName) {
   delete this._groups[groupName];
 }
 
-Controller.prototype.types = function () {
-  return Object.keys(this._types);
+Controller.prototype.formats = function () {
+  return Object.keys(this._formats);
 }
 
-Controller.prototype.type = function (logTypeName, logFormatter) {
+Controller.prototype.format = function (logTypeName, logFormatter) {
   if (typeof logTypeName !== 'string') return;
-  if (!logFormatter) return this._types[logTypeName] || '';
+  if (!logFormatter) return this._formats[logTypeName] || '';
   if (typeof logFormatter === 'string') {
     logFormatter = this._makeFormatter(logFormatter);
   }
   if (typeof logFormatter !== 'function') return;
-  this._types[logTypeName] = logFormatter;
+  this._formats[logTypeName] = logFormatter;
   BetterLog.prototype[logTypeName] = this._makeLog(logTypeName, logFormatter);
 }
 
 Controller.prototype.removeType = function (logTypeName) {
   if (typeof logTypeName !== 'string') return;
   delete BetterLog.prototype[logTypeName];
-  delete this._types[logTypeName];
+  delete this._formats[logTypeName];
 }
 
 Controller.prototype.output = function () {

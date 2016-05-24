@@ -19,11 +19,6 @@ describe('API', function () {
       assert.equal(typeof controller.morgan, 'function');
     })
 
-    it('should be readable', function () {
-      var controller = BetterLogs();
-      assert.ok(isStream.readable(controller))
-    })
-
   })
   
   describe('log', function () {
@@ -36,11 +31,16 @@ describe('API', function () {
     it('should be readable', function (done) {
       var logs = BetterLogs();
       var log = BetterLogs('section');
+      var output = new (stream.Writable)();
+      output._write = function(){};
+      output._writev = function(c,cb){cb()};
+      var logged = '';
       assert.ok(isStream.readable(log))
-      logs.type('info', '{{message}}');
-      logs.output('info', new (stream.Writable)());
+      logs.format('info', '{{message}}');
+      logs.output('section', output);
       log.on('data', function (msg) {
-        assert.equal(new Buffer(msg).toString(), 'test\n');
+        logged += new Buffer(msg).toString();
+        assert.equal(logged, 'test\n');
         done();
       })
       log.info('test')

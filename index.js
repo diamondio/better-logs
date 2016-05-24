@@ -2,7 +2,9 @@
 //  Diamond Inc (c) 2016
 //
 var colors = require('colors');
+var extend = require('deep-extend');
 
+var BetterLog  = require('./log');
 var Controller = require('./controller');
 var morgan     = require('./morgan');
 var controller;
@@ -10,6 +12,7 @@ var controller;
 var init = function (opts) {
   if (!controller) {
     controller = new Controller();
+    extend(BetterLog.prototype, Controller.prototype, controller);
     controller.config({
       outputs: {
         _default: process.stdout
@@ -17,7 +20,7 @@ var init = function (opts) {
       groups: {
         
       },
-      types: {
+      formats: {
         log: "{{timestamp}}".grey + " info".cyan + " [{{section}}] {{message}}".white + " ({{file}}:{{line}})".grey,
         info: "{{timestamp}}".grey + " info".cyan + " [{{section}}] {{message}}".white + " ({{file}}:{{line}})".grey,
         warn: "{{timestamp}}".grey + " warn".yellow + " [{{section}}] {{message}}".white + " [{{section}}] ({{file}}:{{line}})".grey,
@@ -41,6 +44,7 @@ var init = function (opts) {
   if (typeof opts === 'object') {
     controller.config(opts);
   }
+
   return controller;
 }
 
