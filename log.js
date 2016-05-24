@@ -5,6 +5,7 @@ function BetterLog (opts) {
 
   Readable.call(this, opts);
 
+  this.controller    = opts.controller    || null;
   this.section       = opts.section       || 'general';
   this.stackIndex    = opts.stackIndex    || 1;
   this.maxTraceDepth = opts.maxTraceDepth || 20;

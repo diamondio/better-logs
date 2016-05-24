@@ -12,7 +12,6 @@ var controller;
 var init = function (opts) {
   if (!controller) {
     controller = new Controller();
-    extend(BetterLog.prototype, Controller.prototype, controller);
     controller.config({
       outputs: {
         _default: process.stdout

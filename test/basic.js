@@ -28,6 +28,14 @@ describe('API', function () {
       assert.equal(typeof log, 'object');
     })
 
+    it('should configure from log', function () {
+      var logs = BetterLogs();
+      var log = BetterLogs('section');
+      log.mode('a');
+      assert.equal(log.mode(), 'a')
+      assert.equal(logs.mode(), 'a')
+    })
+    
     it('should be readable', function (done) {
       var logs = BetterLogs();
       var log = BetterLogs('section');

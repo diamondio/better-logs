@@ -208,6 +208,10 @@ describe('Customizations', function () {
 
   })
 
+  describe('reset', function () {
+    // TODO
+  })
+
   describe('show and hide', function () {
 
     before(function () {
@@ -274,10 +278,10 @@ describe('Customizations', function () {
         writes++;
         var written = new Buffer(msg).toString();
         if (writes === 1) {
-          assert.equal(written, 'b\n');
+          assert.equal(written, 'd\n');
         }
         if (writes === 2) {
-          assert.equal(written, 'd\n');
+          assert.equal(written, 'f\n');
         }
         if (writes === 3) {
           assert.equal(written, 'e\n');
@@ -285,14 +289,10 @@ describe('Customizations', function () {
         }
       });
       log.hide('testShowSectionType')
-      log.simple1('a');
-      log.show('testShowSectionType')
-      log.simple1('b');
-      log.hide('testShowSectionType')
       log.show('testShowSectionType/simple2')
       log.simple1('c');
       log.simple2('d');
-      log.reset('testShowSectionType/simple2')
+      log.reset()
       log.show('testShowSectionType')
       log.hide('_default/simple2')
       log.simple2('f');
@@ -337,16 +337,118 @@ describe('Customizations', function () {
 
   describe('modes', function () {
 
-    it('should show/hide by default', function () {
+    before(function () {
+      var logs = BetterLogs();
+      logs.format('simple', '{{message}}');
+      logs.format('simple1', '{{message}}');
+      logs.format('simple2', '{{message}}');
+      logs.format('simple3', '{{message}}');
+      logs.output(VOID);
+      this.logs = logs;
     })
 
-    it('should show/hide section', function () {
+    it('by default', function (done) {
+      var log = BetterLogs('testModeDefault');
+      log.mode('testMode');
+      var writes = 0;
+      log.on('data', function (msg) {
+        writes++;
+        var written = new Buffer(msg).toString();
+        if (writes === 1) {
+          assert.equal(written, 'b\n');
+          done();
+        }
+      });
+      log.mode('testMode', { showByDefault: false });
+      log.simple1('a');
+      log.mode('testMode', { showByDefault: true });
+      log.simple1('b');
     })
 
-    it('should show/hide section/type', function () {
+    it('section/type', function (done) {
+      var log = BetterLogs('testModeSection');
+      log.mode('testMode');
+      var writes = 0;
+      log.on('data', function (msg) {
+        writes++;
+        var written = new Buffer(msg).toString();
+        if (writes === 1) {
+          assert.equal(written, 'c\n');
+        }
+        if (writes === 2) {
+          assert.equal(written, 'd\n');
+        }
+        if (writes === 3) {
+          assert.equal(written, 'f\n');
+        }
+        if (writes === 4) {
+          assert.equal(written, 'i\n');
+        }
+        if (writes === 5) {
+          assert.equal(written, 'k\n');
+          done();
+        }
+      });
+      log.reset();
+      log.mode('testMode', null);
+      log.mode('testMode', { showByDefault: false, hide: ['testModeSection'] });
+      log.simple1('a');
+      log.mode('testMode', null);
+      log.mode('testMode', { showByDefault: true, hide: ['testModeSection'] });
+      log.simple1('b');
+      log.mode('testMode', null);
+      log.mode('testMode', { showByDefault: false, show: ['testModeSection'] });
+      log.simple1('c');
+      log.mode('testMode', null);
+      log.mode('testMode', { showByDefault: false, show: ['testModeSection'] });
+      log.simple1('d');
+      log.mode('testMode', null);
+      log.mode('testMode', { showByDefault: false, show: ['testModeSection'], hide: ['simple1'] });
+      log.simple1('e');
+      log.simple2('f');
+      log.mode('testMode', null);
+      log.mode('testMode', { showByDefault: false, hide: ['testModeSection'], hide: ['simple1'] });
+      log.simple1('g');
+      log.simple2('h');
+      log.mode('testMode', null);
+      log.mode('testMode', { showByDefault: false, show: ['testModeSection'], show: ['simple1'] });
+      log.simple1('i');
+      log.simple2('j');
+      log.mode('testMode', null);
+      log.mode('testMode', { showByDefault: true, hide: ['testModeSection'], show: ['simple1'] });
+      log.simple1('k');
+      log.simple2('l');
     })
 
-    it('should show/hide groups', function () {
+    it('groups', function (done) {
+      var log = BetterLogs('testModeGroups');
+      log.group('testGroup', ['section1', 'section2', 'testModeGroups']);
+      log.mode('testMode');
+      var writes = 0;
+      log.on('data', function (msg) {
+        writes++;
+        var written = new Buffer(msg).toString();
+        if (writes === 1) {
+          assert.equal(written, 'c\n');
+        }
+        if (writes === 2) {
+          assert.equal(written, 'd\n');
+          done();
+        }
+      });
+      log.reset();
+      log.mode('testMode', null);
+      log.mode('testMode', { showByDefault: true, hide: ['testGroup'] });
+      log.simple1('a');
+      log.mode('testMode', null);
+      log.mode('testMode', { showByDefault: false, hide: ['testGroup'] });
+      log.simple1('b');
+      log.mode('testMode', null);
+      log.mode('testMode', { showByDefault: true, show: ['testGroup'] });
+      log.simple1('c');
+      log.mode('testMode', null);
+      log.mode('testMode', { showByDefault: false, show: ['testGroup'] });
+      log.simple1('d');
     })
 
   })
