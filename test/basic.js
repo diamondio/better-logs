@@ -1,8 +1,9 @@
 var assert = require('assert');
+var stream = require('stream');
 var isStream = require('is-stream');
 var BetterLogs = require('../');
 
-describe('API Test', function () {
+describe('API', function () {
 
   describe('controller', function () {
 
@@ -23,10 +24,6 @@ describe('API Test', function () {
       assert.ok(isStream.readable(controller))
     })
 
-    it('should set options', function () {
-      // Check setting multiple times
-    })
-
   })
   
   describe('log', function () {
@@ -36,13 +33,25 @@ describe('API Test', function () {
       assert.equal(typeof log, 'object');
     })
 
-    it('should be readable', function () {
+    it('should be readable', function (done) {
+      var logs = BetterLogs();
       var log = BetterLogs('section');
       assert.ok(isStream.readable(log))
-      // Hook and test
+      logs.type('info', '{{message}}');
+      logs.output('info', new (stream.Writable)());
+      log.on('data', function (msg) {
+        assert.equal(new Buffer(msg).toString(), 'test\n');
+        done();
+      })
+      log.info('test')
     })
 
     it('should override console', function () {
+      var realConsoleLog = console.log;
+      BetterLogs({ overrideConsole: true });
+      assert.ok(realConsoleLog !== console.log)
+      BetterLogs({ overrideConsole: false });
+      assert.ok(realConsoleLog === console.log)
     })
 
   })
@@ -50,77 +59,17 @@ describe('API Test', function () {
   describe('defaults', function () {
 
     it('should have basic log types', function () {
+      var log = BetterLogs('section');
+      assert.equal(typeof log.info, 'function')
+      assert.equal(typeof log.warn, 'function')
+      assert.equal(typeof log.error, 'function')
     })
 
     it('should have basic modes', function () {
-    })
-    
-    it('should have stdout output', function () {
-    })
-
-  })
-
-  describe('custom log types', function () {
-
-    it('should format basic', function () {
-      // Try all formats
-    })
-    
-    it('should format stack', function () {
-    })
-    
-    it('should format function', function () {
-    })
-    
-  })
-
-  describe('custom output', function () {
-
-    it('should set default output', function () {
-    })
-
-    it('should set section output', function () {
-    })
-
-    it('should set section/type output', function () {
-    })
-
-  })
-
-  describe('show and hide', function () {
-
-    it('should show/hide by default', function () {
-    })
-
-    it('should show/hide section', function () {
-    })
-
-    it('should show/hide section/type', function () {
-    })
-
-    it('should show/hide groups', function () {
-    })
-
-    it('should show/hide groups within groups', function () {
-    })
-
-  })
-
-  describe('modes', function () {
-
-    it('should show/hide by default', function () {
-    })
-
-    it('should show/hide section', function () {
-    })
-
-    it('should show/hide section/type', function () {
-    })
-
-    it('should show/hide groups', function () {
-    })
-
-    it('should show/hide groups within groups', function () {
+      var logs = BetterLogs();
+      assert.ok(logs.modes().indexOf('silent') > -1)
+      assert.ok(logs.modes().indexOf('normal') > -1)
+      assert.ok(logs.modes().indexOf('verbose') > -1)
     })
 
   })

@@ -8,7 +8,7 @@ var Readable  = require('stream').Readable;
 var BetterLog = require('./log');
 var morgan    = require('./morgan');
 
-var _console = global.console;
+var _console = extend({}, console);
 
 function Controller (opts) {
   opts = opts || {};
@@ -266,8 +266,13 @@ Controller.prototype.config = function (opts) {
       var consoleLog = self.create('console');
       consoleLog.stackIndex = 2;
       consoleLog.resume();
-      Object.keys(_console).forEach(function (key) { console[key] = function () { return consoleLog[key].apply(consoleLog, arguments) } });
+      Object.keys(_console).forEach(function (key) {
+        console[key] = function () {
+          return consoleLog[key].apply(consoleLog, arguments)
+        }
+      });
     } else {
+      console = _console;
       Object.keys(_console).forEach(function (key) { console[key] = _console[key] });
     }
   }
