@@ -151,7 +151,7 @@ describe('Customizations', function () {
     
     it('should format time', function (done) {
       var log = BetterLogs('testSectionName');
-      log.dateformat = 'HH:MM year: yyyy'
+      log.config({ display: { dateformat: 'HH:MM year: yyyy' } })
       log.format('testFormatTime', '{{timestamp}}');
       var logged = '';
       log.on('data', function (msg) {

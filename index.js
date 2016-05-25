@@ -13,11 +13,17 @@ var init = function (opts) {
   if (!controller) {
     controller = new Controller();
     controller.config({
+      mode: 'normal',
       outputs: {
-        _default: process.stdout
+        _default: process.stdout,
       },
       groups: {
-        
+        normal: ['info', 'warn', 'error'],
+      },
+      display: {
+        dateformat: 'yyyy-mm-dd HH:MM:ss',
+        stackIndex: 1,
+        maxTraceDepth: 20,
       },
       formats: {
         log: "{{timestamp}}".grey + " info".cyan + " [{{section}}] {{message}}".white + " ({{file}}:{{line}})".grey,
@@ -27,14 +33,12 @@ var init = function (opts) {
         debug: "------------------------   debug   ------------------------\n({{section}}) {{file}}:{{line}}: {{message}}\n".yellow
       },
       modes: {
-        normal:   ['info', 'warn', 'error'],
-        verbose:  ['trace', 'normal', 'debug', 'console'],
-        test:     ['test'],
-        critical: ['error'],
-        silent:   [],
+        normal:   { show: ['normal'] },
+        verbose:  { show: ['normal', 'debug', 'console'] },
+        test:     { showByDefault: false, show: ['test'] },
+        critical: { showByDefault: false, show: ['error'] },
+        silent:   { showByDefault: false },
       },
-      output: 'console',
-      mode: 'normal',
       showByDefault: true,
       show: [],
       hide: [],

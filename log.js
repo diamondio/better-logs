@@ -7,11 +7,9 @@ function BetterLog (opts) {
 
   this.controller    = opts.controller    || null;
   this.section       = opts.section       || 'general';
-  this.stackIndex    = opts.stackIndex    || 1;
-  this.maxTraceDepth = opts.maxTraceDepth || 20;
-  this.dateformat    = opts.dateformat    || 'yyyy-mm-dd HH:MM:ss';
   
-  this.started = false;
+  this.started    = false;
+  this._display   = {};
   this._unwritten = [];
 
 }

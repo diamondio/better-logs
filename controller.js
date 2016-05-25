@@ -16,12 +16,12 @@ function Controller (opts) {
   this._mode = 'normal';
   this._unwritten = [];
 
-  this._groups = {};
-  this._formats = {};
-  this._modes = {};
-
-  this._outputs = {}; // [section|_default][type|_default]
-  this._visible = {}; // [section|_default][type|_default]
+  this._visible = {}; // Map section => Map type => Boolean
+  this._outputs = {}; // Map section => Map type => Writable
+  this._groups = {};  // Map group => array of sections
+  this._formats = {}; // Map type => format function
+  this._modes = {};   // Map mode => mode options
+  this._display = {}; // Display options
 
   if (typeof opts === 'object') {
     this.config(opts);
@@ -194,7 +194,7 @@ Controller.prototype._makeLog = function (type) {
 
     if (score < 0) return;
 
-    var message = ctl._formats[type].apply(extend({ logType: type }, _.pick(log, ['dateformat', 'section', 'stackIndex', 'maxTraceDepth'])), arguments);
+    var message = ctl._formats[type].apply(extend({ section: log.section, logType: type }, ctl._display, log._display), arguments);
     // console.log('writing', message)
     
     log.push(message);
@@ -255,6 +255,9 @@ Controller.prototype.create = function (section) {
 Controller.prototype.config = function (opts) {
   if (typeof opts !== 'object') return;
   var self = this;
+  if (typeof opts.display === 'object') {
+    extend(self._display, opts.display);
+  }
   if (opts.groups) {
     Object.keys(opts.groups).forEach(function (name) { return self.group(name, opts.groups[name]) })
   }
@@ -299,6 +302,11 @@ Controller.prototype.config = function (opts) {
     opts.show.forEach(function (elem) { self._setVisibility(elem, 'show') })
   }
   return self;
+}
+
+Controller.prototype.display = function (key, val) {
+  if (typeof key !== 'string') return;
+  this._display[key] = val;
 }
 
 Controller.prototype.modes = function () {
