@@ -279,8 +279,8 @@ Controller.prototype.config = function (opts) {
       consoleLog.stackIndex = 2;
       consoleLog.resume();
       Object.keys(_console).forEach(function (key) {
-        console[key] = function () {
-          return consoleLog[key].apply(consoleLog, arguments)
+        if (consoleLog[key]) {
+          console[key] = consoleLog[key].bind(consoleLog)
         }
       });
     } else {
