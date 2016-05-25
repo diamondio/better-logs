@@ -350,6 +350,10 @@ Controller.prototype.mode = function (modeName, modeOptions) {
   this._modes[modeName] = modeOptions;
 }
 
+Controller.prototype.groups = function () {
+  return Object.keys(this._groups);
+}
+
 Controller.prototype.group = function (groupName, groupSections) {
   if (typeof groupName !== 'string') return;
   if (groupSections === undefined) {
