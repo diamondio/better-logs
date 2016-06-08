@@ -16,12 +16,13 @@ function Controller (opts) {
   this._mode = 'normal';
   this._unwritten = [];
 
-  this._visible = {}; // Map section => Map type => Boolean
-  this._outputs = {}; // Map section => Map type => Writable
-  this._groups = {};  // Map group => array of sections
-  this._formats = {}; // Map type => format function
-  this._modes = {};   // Map mode => mode options
-  this._display = {}; // Display options
+  this._morgan = null; // The real morgan object
+  this._visible = {};  // Map section => Map type => Boolean
+  this._outputs = {};  // Map section => Map type => Writable
+  this._groups = {};   // Map group => array of sections
+  this._formats = {};  // Map type => format function
+  this._modes = {};    // Map mode => mode options
+  this._display = {};  // Display options
 
   if (typeof opts === 'object') {
     this.config(opts);
@@ -137,7 +138,7 @@ Controller.prototype._makeFormatter = function (format) {
       args.unshift(message);
     }
     output = output.replace(/{{message}}/gi, args.join(' '));
-    return output + "\n";
+    return output;
   }
 }
 
@@ -385,6 +386,9 @@ Controller.prototype.format = function (logTypeName, logFormatter) {
     delete BetterLog.prototype[logTypeName];
     delete this._formats[logTypeName];
   }
+  if (logTypeName === 'morgan') {
+    return this._formats[logTypeName] = logFormatter;
+  }
   if (typeof logFormatter === 'string') {
     logFormatter = this._makeFormatter(logFormatter);
   }
@@ -404,11 +408,30 @@ Controller.prototype.output = function () {
   var sectionOrGroup = parts[0];
   var type = parts.length === 2 ? parts[1] : '_default';
   self._resolve(sectionOrGroup).forEach(function (section) {
+    if (section === '_default' && !self._outputs['morgan']) {
+      self._refreshMorgan();
+    }
     self._outputs[section] = self._outputs[section] || {};
     self._outputs[section][type] = outputStream;
   })
 }
 
-Controller.prototype.morgan = morgan;
+Controller.prototype._refreshMorgan = function () {
+  var self = this;
+  if (!self.format('morgan')) {
+    self.format('morgan', ':datefmt'.grey + ' '.white + ':method-pad' + ' :url '.white + ':status-code' + ' :response-time ms'.grey);
+  }
+  self._morgan = morgan(self.format('morgan'), {
+    stream: self._getOutputStream('morgan', 'morgan')
+  })
+}
+
+Controller.prototype.morgan = function (opts) {
+  var self = this;
+  self._refreshMorgan();
+  return function (req, res, next) {
+    self._morgan(req, res, next);
+  }
+}
 
 module.exports = Controller;

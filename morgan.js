@@ -35,9 +35,4 @@ function statusCodeToColour(output, res) {
 }
 
 
-module.exports = function (opts) {
-  opts = opts || {};
-  return function () {
-    morgan(':datefmt'.grey + ' '.white + ':method-pad' + ' :url '.white + ':status-code' + ' :response-time ms'.grey, opts).apply(this, arguments);
-  }
-}
+module.exports = morgan;
