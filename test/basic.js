@@ -51,7 +51,7 @@ describe('API', function () {
       logs.output('section', output);
       log.on('data', function (msg) {
         logged += new Buffer(msg).toString();
-        assert.equal(logged, 'test\n');
+        assert.equal(logged, 'test');
         done();
       })
       log.info('test')
@@ -102,10 +102,10 @@ describe('API', function () {
         writes++;
         var written = new Buffer(msg).toString();
         if (writes === 1) {
-          assert.equal(written, 'b\n');
+          assert.equal(written, 'b');
         }
         if (writes === 2) {
-          assert.equal(written, 'd\n');
+          assert.equal(written, 'd');
           done();
         }
       });

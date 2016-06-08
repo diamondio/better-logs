@@ -33,7 +33,7 @@ describe('Basic', function () {
       var log = BetterLogs('testBasicNull');
       log.on('data', function (msg) {
         var logged = new Buffer(msg).toString();
-        assert.equal(logged, 'null\n');
+        assert.equal(logged, 'null');
         done();
       })
       log.simple(null);
@@ -44,7 +44,7 @@ describe('Basic', function () {
       var log = BetterLogs('testBasicNaN');
       log.on('data', function (msg) {
         var logged = new Buffer(msg).toString();
-        assert.equal(logged, 'NaN\n');
+        assert.equal(logged, 'NaN');
         done();
       })
       log.simple(NaN);
@@ -55,7 +55,7 @@ describe('Basic', function () {
       var log = BetterLogs('testBasicUndefined');
       log.on('data', function (msg) {
         var logged = new Buffer(msg).toString();
-        assert.equal(logged, 'undefined\n');
+        assert.equal(logged, 'undefined');
         done();
       })
       log.simple(undefined);
@@ -66,7 +66,7 @@ describe('Basic', function () {
       var log = BetterLogs('testBasicString');
       log.on('data', function (msg) {
         var logged = new Buffer(msg).toString();
-        assert.equal(logged, 'hello\n');
+        assert.equal(logged, 'hello');
         done();
       })
       log.simple('hello');
@@ -77,7 +77,7 @@ describe('Basic', function () {
       var log = BetterLogs('testBasicNumber');
       log.on('data', function (msg) {
         var logged = new Buffer(msg).toString();
-        assert.equal(logged, '12.75\n');
+        assert.equal(logged, '12.75');
         done();
       })
       log.simple(12.75);
@@ -88,7 +88,7 @@ describe('Basic', function () {
       var log = BetterLogs('testBasicObject');
       log.on('data', function (msg) {
         var logged = new Buffer(msg).toString();
-        assert.equal(logged, '{ x: 1, y: [ \'a\', 2, 3 ], z: Infinity }\n');
+        assert.equal(logged, '{ x: 1, y: [ \'a\', 2, 3 ], z: Infinity }');
         done();
       })
       log.simple({ x: 1, y: ['a', 2, 3], z: Infinity });
@@ -99,7 +99,7 @@ describe('Basic', function () {
       var log = BetterLogs('testBasicFormatting');
       log.on('data', function (msg) {
         var logged = new Buffer(msg).toString();
-        assert.equal(logged, '1: null 2: undefined 3: hello 4: 12 5: {"x":1,"y":["a",2,3]} extra\n');
+        assert.equal(logged, '1: null 2: undefined 3: hello 4: 12 5: {"x":1,"y":["a",2,3]} extra');
         done();
       })
       log.simple('1: %s 2: %s 3: %s 4: %d 5: %j', null, undefined, 'hello', 12, { x: 1, y: ['a', 2, 3] }, 'extra');
@@ -126,7 +126,7 @@ describe('Customizations', function () {
       var logged = '';
       log.on('data', function (msg) {
         var logged = new Buffer(msg).toString();
-        assert.equal(logged, 'a! [testSectionName] type: testFormatBasic {} {{not_one}}\n');
+        assert.equal(logged, 'a! [testSectionName] type: testFormatBasic {} {{not_one}}');
         done();
       })
       log.testFormatBasic('a');
@@ -157,7 +157,7 @@ describe('Customizations', function () {
       log.on('data', function (msg) {
         var now = new Date();
         var logged = new Buffer(msg).toString();
-        assert.equal(logged, pad(now.getHours(), 2) + ':' + pad(now.getMinutes(), 2) + ' year: ' + now.getFullYear() + '\n');
+        assert.equal(logged, pad(now.getHours(), 2) + ':' + pad(now.getMinutes(), 2) + ' year: ' + now.getFullYear());
         done();
       })
       log.testFormatTime('a');
@@ -180,7 +180,7 @@ describe('Customizations', function () {
       var output = new (stream.Writable)();
       output._write = function (msg) {
         var written = new Buffer(msg).toString();
-        assert.equal(written, 'a\n');
+        assert.equal(written, 'a');
         done();
       };
       log.output('testSectionOutput', output);
@@ -193,11 +193,11 @@ describe('Customizations', function () {
       var outputDefault = new (stream.Writable)();
       outputSimple._write = function (msg) {
         var written = new Buffer(msg).toString();
-        assert.equal(written, 'a\n');
+        assert.equal(written, 'a');
       };
       outputDefault._write = function (msg) {
         var written = new Buffer(msg).toString();
-        assert.equal(written, 'b\n');
+        assert.equal(written, 'b');
         done();
       };
       log.output('testSectionTypeOutput', outputDefault);
@@ -227,10 +227,10 @@ describe('Customizations', function () {
         writes++;
         var written = new Buffer(msg).toString();
         if (writes === 1) {
-          assert.equal(written, 'a\n');
+          assert.equal(written, 'a');
         }
         if (writes === 2) {
-          assert.equal(written, 'c\n');
+          assert.equal(written, 'c');
           done();
         }
       });
@@ -248,10 +248,10 @@ describe('Customizations', function () {
         writes++;
         var written = new Buffer(msg).toString();
         if (writes === 1) {
-          assert.equal(written, 'b\n');
+          assert.equal(written, 'b');
         }
         if (writes === 2) {
-          assert.equal(written, 'e\n');
+          assert.equal(written, 'e');
           done();
         }
       });
@@ -274,13 +274,13 @@ describe('Customizations', function () {
         writes++;
         var written = new Buffer(msg).toString();
         if (writes === 1) {
-          assert.equal(written, 'd\n');
+          assert.equal(written, 'd');
         }
         if (writes === 2) {
-          assert.equal(written, 'f\n');
+          assert.equal(written, 'f');
         }
         if (writes === 3) {
-          assert.equal(written, 'e\n');
+          assert.equal(written, 'e');
           done();
         }
       });
@@ -304,13 +304,13 @@ describe('Customizations', function () {
         writes++;
         var written = new Buffer(msg).toString();
         if (writes === 1) {
-          assert.equal(written, 'b\n');
+          assert.equal(written, 'b');
         }
         if (writes === 2) {
-          assert.equal(written, 'd\n');
+          assert.equal(written, 'd');
         }
         if (writes === 3) {
-          assert.equal(written, 'f\n');
+          assert.equal(written, 'f');
           done();
         }
       });
@@ -351,7 +351,7 @@ describe('Customizations', function () {
         writes++;
         var written = new Buffer(msg).toString();
         if (writes === 1) {
-          assert.equal(written, 'b\n');
+          assert.equal(written, 'b');
           done();
         }
       });
@@ -369,19 +369,19 @@ describe('Customizations', function () {
         writes++;
         var written = new Buffer(msg).toString();
         if (writes === 1) {
-          assert.equal(written, 'c\n');
+          assert.equal(written, 'c');
         }
         if (writes === 2) {
-          assert.equal(written, 'd\n');
+          assert.equal(written, 'd');
         }
         if (writes === 3) {
-          assert.equal(written, 'f\n');
+          assert.equal(written, 'f');
         }
         if (writes === 4) {
-          assert.equal(written, 'i\n');
+          assert.equal(written, 'i');
         }
         if (writes === 5) {
-          assert.equal(written, 'k\n');
+          assert.equal(written, 'k');
           done();
         }
       });
@@ -425,10 +425,10 @@ describe('Customizations', function () {
         writes++;
         var written = new Buffer(msg).toString();
         if (writes === 1) {
-          assert.equal(written, 'c\n');
+          assert.equal(written, 'c');
         }
         if (writes === 2) {
-          assert.equal(written, 'd\n');
+          assert.equal(written, 'd');
           done();
         }
       });
