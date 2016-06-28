@@ -1,7 +1,6 @@
 var _        = require('lodash');
 var util     = require('util');
 var path     = require('path');
-var isStream = require('is-stream');
 var datefmt  = require('dateformat');
 var extend   = require('deep-extend');
 
@@ -399,9 +398,14 @@ Controller.prototype.format = function (logTypeName, logFormatter) {
 
 Controller.prototype.output = function () {
   var self = this;
+  var isWritable = function (output) {
+    return (output &&
+      typeof output.write === 'function' &&
+      typeof output.end === 'function')
+  }
   if (arguments.length < 1 || arguments.length > 2) return false;
-  if (arguments.length === 1 && !isStream.writable(arguments[0])) return false;
-  if (arguments.length === 2 && (typeof arguments[0] !== 'string' || !isStream.writable(arguments[1]))) return false;
+  if (arguments.length === 1 && !isWritable(arguments[0])) return false;
+  if (arguments.length === 2 && (typeof arguments[0] !== 'string' || !isWritable(arguments[1]))) return false;
   var input = arguments.length === 1 ? '_default' : arguments[0];
   var outputStream = arguments[arguments.length-1];
   var parts = input.split('/', 2);
