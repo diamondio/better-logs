@@ -1,6 +1,5 @@
 var assert = require('assert');
 var stream = require('stream');
-var isStream = require('is-stream');
 var BetterLogs = require('../');
 
 var VOID = new (stream.Writable)();
@@ -46,7 +45,8 @@ describe('API', function () {
       output._write = function(){};
       output._writev = function(c,cb){cb()};
       var logged = '';
-      assert.ok(isStream.readable(log))
+      assert.ok(typeof log.pipe == 'function')
+      assert.ok(typeof log.on == 'function')
       logs.format('info', '{{message}}');
       logs.output('section', output);
       log.on('data', function (msg) {
