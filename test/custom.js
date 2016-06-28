@@ -1,6 +1,5 @@
 var assert = require('assert');
 var stream = require('stream');
-var isStream = require('is-stream');
 var BetterLogs = require('../');
 var BetterLog = require('../log');
 
