@@ -29,7 +29,7 @@ var init = function (opts) {
         log: "{{timestamp}}".grey + " info".cyan + " [{{section}}] {{message}}".white + " ({{file}}:{{line}})".grey + '\n',
         info: "{{timestamp}}".grey + " info".cyan + " [{{section}}] {{message}}".white + " ({{file}}:{{line}})".grey + '\n',
         warn: "{{timestamp}}".grey + " warn".yellow + " [{{section}}] {{message}}".white + " [{{section}}] ({{file}}:{{line}})".grey + '\n',
-        error: "{{timestamp}}".grey + " err!".red.bold + " [{{ section }}] {{message}}\n  {{method}} [{{section}}] ({{file}}:{{line}})\n{{stack}}".red + '\n',
+        error: "{{timestamp}}".grey + " err!".red.bold + " [{{section}}] {{message}}\n  {{fn}} [{{section}}] ({{file}}:{{line}})\n{{stack}}".red + '\n',
         debug: "------------------------   debug   ------------------------\n({{section}}) {{file}}:{{line}}: {{message}}\n".yellow + '\n'
       },
       modes: {
