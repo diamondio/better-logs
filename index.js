@@ -13,7 +13,7 @@ var init = function (opts) {
   if (!controller) {
     controller = new Controller();
     controller.config({
-      mode: 'normal',
+      mode: false,
       outputs: {
         _default: process.stdout,
       },

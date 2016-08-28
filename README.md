@@ -18,19 +18,14 @@ npm install --save better-logs
 ## Usage
 
 ```js
-var logs = require('better-logs')(options);
-```
-
-In your code:
-```js
 var log = require('better-logs')('section');
-```
 
-Then when you want to log stuff:
-```js
-log.info("This is a normal operation.", someVar1, someVar2, "strings");
-log.warn("This is a suspicious behaviour...");
-log.error("This is a failure!", err);
+log.format('awesome', '{{timestamp}} AWESOME: {{message}}\n');
+log.awesome('custom format');
+
+log.info('test');
+log.warn('warning');
+log.error('error with stack');
 ```
 
 ## Sections
