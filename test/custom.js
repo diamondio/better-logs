@@ -1,7 +1,6 @@
 var assert = require('assert');
 var stream = require('stream');
-var BetterLogs = require('../');
-var BetterLog = require('../log');
+var logs = require('../');
 
 // Output to /dev/null
 var VOID = new (stream.Writable)();
@@ -22,14 +21,14 @@ describe('Basic', function () {
   describe('log basic types', function () {
 
     before(function () {
-      var logs = BetterLogs();
-      logs.format('simple', '{{message}}')
-      logs.output(VOID);
+      var log = logs('basic');
+      log.format('simple', '{{message}}')
+      log.output(VOID);
     })
 
     it('prints null', function (done) {
       var logged = '';
-      var log = BetterLogs('testBasicNull');
+      var log = logs('testBasicNull');
       log.on('data', function (msg) {
         var logged = new Buffer(msg).toString();
         assert.equal(logged, 'null');
@@ -40,7 +39,7 @@ describe('Basic', function () {
     
     it('prints NaN', function (done) {
       var logged = '';
-      var log = BetterLogs('testBasicNaN');
+      var log = logs('testBasicNaN');
       log.on('data', function (msg) {
         var logged = new Buffer(msg).toString();
         assert.equal(logged, 'NaN');
@@ -51,7 +50,7 @@ describe('Basic', function () {
     
     it('prints undefined', function (done) {
       var logged = '';
-      var log = BetterLogs('testBasicUndefined');
+      var log = logs('testBasicUndefined');
       log.on('data', function (msg) {
         var logged = new Buffer(msg).toString();
         assert.equal(logged, 'undefined');
@@ -62,7 +61,7 @@ describe('Basic', function () {
     
     it('prints string', function (done) {
       var logged = '';
-      var log = BetterLogs('testBasicString');
+      var log = logs('testBasicString');
       log.on('data', function (msg) {
         var logged = new Buffer(msg).toString();
         assert.equal(logged, 'hello');
@@ -73,7 +72,7 @@ describe('Basic', function () {
 
     it('prints number', function (done) {
       var logged = '';
-      var log = BetterLogs('testBasicNumber');
+      var log = logs('testBasicNumber');
       log.on('data', function (msg) {
         var logged = new Buffer(msg).toString();
         assert.equal(logged, '12.75');
@@ -84,7 +83,7 @@ describe('Basic', function () {
 
     it('prints object', function (done) {
       var logged = '';
-      var log = BetterLogs('testBasicObject');
+      var log = logs('testBasicObject');
       log.on('data', function (msg) {
         var logged = new Buffer(msg).toString();
         assert.equal(logged, '{ x: 1, y: [ \'a\', 2, 3 ], z: Infinity }');
@@ -95,7 +94,7 @@ describe('Basic', function () {
     
     it('prints formatted', function (done) {
       var logged = '';
-      var log = BetterLogs('testBasicFormatting');
+      var log = logs('testBasicFormatting');
       log.on('data', function (msg) {
         var logged = new Buffer(msg).toString();
         assert.equal(logged, '1: null 2: undefined 3: hello 4: 12 5: {"x":1,"y":["a",2,3]} extra');
@@ -113,14 +112,14 @@ describe('Customizations', function () {
   describe('custom log types', function () {
 
     before(function () {
-      var logs = BetterLogs();
-      logs.format('simple', '{{message}}')
-      logs.format('alternative', '{{message}}')
-      logs.output(VOID);
+      var log = logs('customize');
+      log.format('simple', '{{message}}')
+      log.format('alternative', '{{message}}')
+      log.output(VOID);
     })
 
     it('should format basic', function (done) {
-      var log = BetterLogs('testSectionName');
+      var log = logs('testSectionName');
       log.format('testFormatBasic', '{{message}}! [{{section}}] type: {{type}} {} {{not_one}}');
       var logged = '';
       log.on('data', function (msg) {
@@ -132,7 +131,7 @@ describe('Customizations', function () {
     })
     
     it('should format stack', function testFnName(done) {
-      var log = BetterLogs('section');
+      var log = logs('section');
       log.format('testFormatStack', '{{file}}:{{line}} {{pos}} {{fn}} {{path}}');
       var logged = '';
       log.on('data', function (msg) {
@@ -149,8 +148,8 @@ describe('Customizations', function () {
     })
     
     it('should format time', function (done) {
-      var log = BetterLogs('testSectionName');
-      log.config({ display: { dateformat: 'HH:MM year: yyyy' } })
+      var log = logs('testSectionName');
+      log.display('dateformat', 'HH:MM year: yyyy')
       log.format('testFormatTime', '{{timestamp}}');
       var logged = '';
       log.on('data', function (msg) {
@@ -167,15 +166,14 @@ describe('Customizations', function () {
   describe('custom output', function () {
 
     before(function () {
-      var logs = BetterLogs();
-      logs.format('simple', '{{message}}');
-      logs.format('alternative', '{{message}}');
-      logs.output(VOID);
-      this.logs = logs;
+      var log = logs('custom-output');
+      log.format('simple', '{{message}}');
+      log.format('alternative', '{{message}}');
+      log.output(VOID);
     })
 
     it('should set section output', function (done) {
-      var log = BetterLogs('testSectionOutput');
+      var log = logs('testSectionOutput');
       var output = new (stream.Writable)();
       output._write = function (msg) {
         var written = new Buffer(msg).toString();
@@ -187,7 +185,7 @@ describe('Customizations', function () {
     })
 
     it('should set section/type output', function (done) {
-      var log = BetterLogs('testSectionTypeOutput');
+      var log = logs('testSectionTypeOutput');
       var outputSimple = new (stream.Writable)();
       var outputDefault = new (stream.Writable)();
       outputSimple._write = function (msg) {
@@ -210,17 +208,16 @@ describe('Customizations', function () {
   describe('show and hide', function () {
 
     before(function () {
-      var logs = BetterLogs();
-      logs.format('simple', '{{message}}');
-      logs.format('simple1', '{{message}}');
-      logs.format('simple2', '{{message}}');
-      logs.format('simple3', '{{message}}');
-      logs.output(VOID);
-      this.logs = logs;
+      var log = logs('shownhide');
+      log.format('simple', '{{message}}');
+      log.format('simple1', '{{message}}');
+      log.format('simple2', '{{message}}');
+      log.format('simple3', '{{message}}');
+      log.output(VOID);
     })
 
     it('by default', function (done) {
-      var log = BetterLogs('testShowDefault');
+      var log = logs('testShowDefault');
       var writes = 0;
       log.on('data', function (msg) {
         writes++;
@@ -234,14 +231,14 @@ describe('Customizations', function () {
         }
       });
       log.simple('a');
-      log.config({ showByDefault: false })
+      log.hide()
       log.simple('b');
-      log.config({ showByDefault: true })
+      log.show()
       log.simple('c');
     })
 
     it('section', function (done) {
-      var log = BetterLogs('testShowSection');
+      var log = logs('testShowSection');
       var writes = 0;
       log.on('data', function (msg) {
         writes++;
@@ -254,12 +251,12 @@ describe('Customizations', function () {
           done();
         }
       });
-      log.config({ showByDefault: false })
+      log.hide()
       log.show('testShowSection')
       log.simple('b');
       log.hide('testShowSection')
       log.simple('c');
-      log.config({ showByDefault: true })
+      log.show()
       log.hide('testShowSection')
       log.simple('d');
       log.show('testShowSection')
@@ -267,7 +264,7 @@ describe('Customizations', function () {
     })
 
     it('section/type', function (done) {
-      var log = BetterLogs('testShowSectionType');
+      var log = logs('testShowSectionType');
       var writes = 0;
       log.on('data', function (msg) {
         writes++;
@@ -295,7 +292,7 @@ describe('Customizations', function () {
     })
 
     it('groups', function (done) {
-      var log = BetterLogs('testShowGroups');
+      var log = logs('testShowGroups');
       log.group('group1', ['section1', 'section2', 'testShowGroups']);
       log.group('group2', ['section3', 'section4']);
       var writes = 0;
@@ -333,18 +330,16 @@ describe('Customizations', function () {
   describe('modes', function () {
 
     before(function () {
-      var logs = BetterLogs();
-      logs.format('simple', '{{message}}');
-      logs.format('simple1', '{{message}}');
-      logs.format('simple2', '{{message}}');
-      logs.format('simple3', '{{message}}');
-      logs.output(VOID);
-      this.logs = logs;
+      var log = logs('modes');
+      log.format('simple', '{{message}}');
+      log.format('simple1', '{{message}}');
+      log.format('simple2', '{{message}}');
+      log.format('simple3', '{{message}}');
+      log.output(VOID);
     })
 
     it('by default', function (done) {
-      var log = BetterLogs('testModeDefault');
-      log.mode('testMode');
+      var log = logs('testModeDefault');
       var writes = 0;
       log.on('data', function (msg) {
         writes++;
@@ -355,14 +350,15 @@ describe('Customizations', function () {
         }
       });
       log.mode('testMode', { showByDefault: false });
+      log.mode('testMode');
       log.simple1('a');
       log.mode('testMode', { showByDefault: true });
+      log.mode('testMode');
       log.simple1('b');
     })
 
     it('section/type', function (done) {
-      var log = BetterLogs('testModeSection');
-      log.mode('testMode');
+      var log = logs('testModeSection');
       var writes = 0;
       log.on('data', function (msg) {
         writes++;
@@ -385,38 +381,38 @@ describe('Customizations', function () {
         }
       });
       log.reset();
-      log.mode('testMode', null);
       log.mode('testMode', { showByDefault: false, hide: ['testModeSection'] });
+      log.mode('testMode');
       log.simple1('a');
-      log.mode('testMode', null);
       log.mode('testMode', { showByDefault: true, hide: ['testModeSection'] });
+      log.mode('testMode');
       log.simple1('b');
-      log.mode('testMode', null);
       log.mode('testMode', { showByDefault: false, show: ['testModeSection'] });
+      log.mode('testMode');
       log.simple1('c');
-      log.mode('testMode', null);
       log.mode('testMode', { showByDefault: false, show: ['testModeSection'] });
+      log.mode('testMode');
       log.simple1('d');
-      log.mode('testMode', null);
       log.mode('testMode', { showByDefault: false, show: ['testModeSection'], hide: ['simple1'] });
+      log.mode('testMode');
       log.simple1('e');
       log.simple2('f');
-      log.mode('testMode', null);
       log.mode('testMode', { showByDefault: false, hide: ['testModeSection'], hide: ['simple1'] });
+      log.mode('testMode');
       log.simple1('g');
       log.simple2('h');
-      log.mode('testMode', null);
       log.mode('testMode', { showByDefault: false, show: ['testModeSection'], show: ['simple1'] });
+      log.mode('testMode');
       log.simple1('i');
       log.simple2('j');
-      log.mode('testMode', null);
       log.mode('testMode', { showByDefault: true, hide: ['testModeSection'], show: ['simple1'] });
+      log.mode('testMode');
       log.simple1('k');
       log.simple2('l');
     })
 
     it('groups', function (done) {
-      var log = BetterLogs('testModeGroups');
+      var log = logs('testModeGroups');
       log.group('testGroup', ['section1', 'section2', 'testModeGroups']);
       log.mode('testMode');
       var writes = 0;
@@ -432,17 +428,17 @@ describe('Customizations', function () {
         }
       });
       log.reset();
-      log.mode('testMode', null);
       log.mode('testMode', { showByDefault: true, hide: ['testGroup'] });
+      log.mode('testMode');
       log.simple1('a');
-      log.mode('testMode', null);
       log.mode('testMode', { showByDefault: false, hide: ['testGroup'] });
+      log.mode('testMode');
       log.simple1('b');
-      log.mode('testMode', null);
       log.mode('testMode', { showByDefault: true, show: ['testGroup'] });
+      log.mode('testMode');
       log.simple1('c');
-      log.mode('testMode', null);
       log.mode('testMode', { showByDefault: false, show: ['testGroup'] });
+      log.mode('testMode');
       log.simple1('d');
     })
 

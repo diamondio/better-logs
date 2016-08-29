@@ -30,7 +30,7 @@ var _outputs = {
 
 // Map [section|type] => Boolean
 var _visible = {
-  _default: true
+  '_default/_default': true
 };
 
 
@@ -138,7 +138,7 @@ var _makeFormatter = function (format) {
     args = args.map(function (arg) {
       if (typeof arg === 'object') {
         try {
-          return util.inspect(arg, { depth: log.maxTraceDepth });
+          return util.inspect(arg, { depth: display.maxTraceDepth });
         } catch(e) {
           return '[Circular]';
         }
@@ -154,9 +154,19 @@ var _makeFormatter = function (format) {
 }
 
 var _shouldShow = function (section, type) {
+  var combined = section + '/' + type;
+  var type = '_default/' + type;
+  var section = section + '/_default';
+  var def = '_default/_default';
+  if (_visible[combined] !== undefined) return _visible[combined];
+  if (_visible[section] !== undefined && _visible[type] !== undefined) {
+    if (_visible[section] && _visible[type]) return true;
+    if (!_visible[section] && !_visible[type]) return false;
+    return _visible[def];
+  }
   if (_visible[section] !== undefined) return _visible[section];
   if (_visible[type] !== undefined) return _visible[type];
-  return _visible['_default'];
+  return _visible[def];
 }
 
 var _makeLog = function (type) {
@@ -212,29 +222,45 @@ exports.modes = function () {
   return Object.keys(_modes);
 }
 
-exports.show = function (sectionOrGroup) {
-  if (!sectionOrGroup) {
+exports.show = function (input) {
+  if (!input) {
     _visible = {
-      _default: true
+      '_default/_default': true
     }
     return;
   }
-  extend(_visible, _objectify(_resolveSection(sectionOrGroup), true));
+  if (typeof input !== 'string') return;
+  var parts = input.split('/', 2);
+  var section = parts[0];
+  var type = parts[1] || '_default';
+  if (_formats[section] && parts.length === 1) {
+    type = section;
+    section = '_default';
+  }
+  extend(_visible, _objectify(_resolveSection(section).map(function (section) { return section + '/' + type; }), true));
 }
 
-exports.hide = function (sectionOrGroup) {
-  if (!sectionOrGroup) {
+exports.hide = function (input) {
+  if (!input) {
     _visible = {
-      _default: false
+      '_default/_default': false
     }
     return;
   }
-  extend(_visible, _objectify(_resolveSection(sectionOrGroup), false));
+  if (typeof input !== 'string') return;
+  var parts = input.split('/', 2);
+  var section = parts[0];
+  var type = parts[1] || '_default';
+  if (_formats[section] && parts.length === 1) {
+    type = section;
+    section = '_default';
+  }
+  extend(_visible, _objectify(_resolveSection(section).map(function (section) { return section + '/' + type; }), false));
 }
 
 exports.reset = function () {
   _visible = {
-    _default: true
+    '_default/_default': true
   };
 }
 
@@ -247,15 +273,19 @@ exports.mode = function (modeName, modeOptions) {
     _mode = modeName;
     _visible = {};
     if (modeOptions.show) {
-      extend(_visible, _objectify(_resolveSections(modeOptions.show), true));
+      modeOptions.show.forEach(function (section) {
+        exports.show(section);
+      })
     }
     if (modeOptions.hide) {
-      extend(_visible, _objectify(_resolveSections(modeOptions.hide), false));
+      modeOptions.hide.forEach(function (section) {
+        exports.hide(section);
+      })
     }
     if (modeOptions.showByDefault !== undefined) {
-      _visible['_default'] = modeOptions.showByDefault;
+      _visible['_default/_default'] = modeOptions.showByDefault;
     } else {
-      _visible['_default'] = true;
+      _visible['_default/_default'] = true;
     }
   } else if (!modeOptions) {
     return delete _modes[modeName];
