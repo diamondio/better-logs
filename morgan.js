@@ -15,10 +15,6 @@ morgan.token('method-pad', function (req, res) {
   return statusCodeToColour(output, res);
 });
 
-morgan.token('datefmt', function () {
-  return datefmt(new Date(), "HH:MM:ss");
-});
-
 morgan.token('status-code', function (req, res) {
   return statusCodeToColour(res.statusCode.toString(), res);
 });

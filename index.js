@@ -1,78 +1,64 @@
-//
 //  Diamond Inc (c) 2016
-//
+
 var colors = require('colors');
 var extend = require('deep-extend');
 
 var BetterLog  = require('./log');
-var Controller = require('./controller');
-var morgan     = require('./morgan');
-var controller;
+var controller = require('./controller');
 
-var init = function (opts) {
-  if (!controller) {
-    controller = new Controller();
-    controller.config({
-      mode: false,
-      outputs: {
-        _default: process.stdout,
-      },
-      groups: {
-        normal: ['info', 'warn', 'error'],
-      },
-      display: {
-        dateformat: 'yyyy-mm-dd HH:MM:ss',
-        stackIndex: 1,
-        maxTraceDepth: 20,
-      },
-      formats: {
-        log: "{{timestamp}}".grey + " info".cyan + " [{{section}}] {{message}}".white + " ({{file}}:{{line}})".grey + '\n',
-        info: "{{timestamp}}".grey + " info".cyan + " [{{section}}] {{message}}".white + " ({{file}}:{{line}})".grey + '\n',
-        warn: "{{timestamp}}".grey + " warn".yellow + " [{{section}}] {{message}}".white + " [{{section}}] ({{file}}:{{line}})".grey + '\n',
-        error: "{{timestamp}}".grey + " err!".red.bold + " [{{section}}] {{message}}\n  {{fn}} [{{section}}] ({{file}}:{{line}})\n{{stack}}".red + '\n',
-        debug: "------------------------   debug   ------------------------\n({{section}}) {{file}}:{{line}}: {{message}}\n".yellow + '\n'
-      },
-      modes: {
-        normal:   { show: ['normal'] },
-        verbose:  { show: ['normal', 'debug', 'console'] },
-        test:     { showByDefault: false, show: ['test'] },
-        critical: { showByDefault: false, show: ['error'] },
-        silent:   { showByDefault: false },
-      },
-      showByDefault: true,
-      show: [],
-      hide: [],
-    });
-  }
-  if (typeof opts === 'object') {
-    controller.config(opts);
-  }
+var _console = extend({}, console);
 
-  return controller;
+controller.format('log', "{{timestamp}}".grey + " cons".white.dim + " {{message}}".white + " ({{file}}:{{line}})".white.dim + '\n');
+controller.format('info', "{{timestamp}}".grey + " info".cyan + " {{message}}".white + " ({{section}})".grey + " ({{file}}:{{line}})".white.dim + '\n');
+controller.format('warn', "{{timestamp}}".grey + " warn".yellow + " {{message}}".white + " ({{section}})".grey + " ({{file}}:{{line}})".white.dim + '\n');
+controller.format('error', "{{timestamp}} ".grey + "ERR!".inverse.red.bold + " {{message}}".red + "\n  {{fn}} ({{file}}:{{line}})".grey + " ({{section}})".white.dim + "\n{{stack}}".grey + '\n');
+controller.format('debug', "{{timestamp}} ".grey + "dbug".inverse.yellow + " {{message}}".yellow + "\n              ({{file}}:{{line}})".grey + " ({{section}})".white.dim + '\n');
+controller.format('morgan', ':datefmt'.grey + ' '.white + ':method-pad' + ' :url '.white + ':status-code' + ' :response-time ms'.grey);
+controller.mode('silent', { showByDefault: false });
+
+
+BetterLog.prototype.restoreConsole = function () {
+  console = _console;
+  Object.keys(_console).forEach(function (key) { console[key] = _console[key] });
 }
 
-var create = function (section) {
-  if (!controller) {
-    init();
-  }
-  return controller.create(section);
+BetterLog.prototype.overrideConsole = function () {
+  var consoleLog = new BetterLog('console');
+  consoleLog.stackIndex = 2;
+  consoleLog.resume();
+  Object.keys(_console).forEach(function (key) {
+    if (consoleLog[key]) {
+      console[key] = consoleLog[key].bind(consoleLog)
+    }
+  });
 }
 
-function BetterLogs(opts) {
 
-  if (typeof opts === 'string') {
-    // opts is the section
-    return create(opts);
+// Expose methods
+var fns = [
+  'display',
+  'modes',
+  'show',
+  'hide',
+  'reset',
+  'mode',
+  'groups',
+  'group',
+  'formats',
+  'format',
+  'output',
+  'morgan',
+];
+
+fns.forEach(function (fnName) {
+  BetterLog.prototype[fnName] = controller[fnName];
+})
+
+function BetterLogs(section) {
+  if (typeof section !== 'string') {
+    throw new Error('better-logs needs to be instantiated with a section, like require("better-logs")("section").');
   }
-
-  return init(opts);
-}
-
-BetterLogs.morgan = function (opts) {
-  if (!controller) {
-    init()
-  }
-  return controller.morgan();
+  return new BetterLog(section);
 }
 
 module.exports = BetterLogs;

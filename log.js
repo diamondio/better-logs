@@ -1,15 +1,12 @@
 var util     = require('util');
 var Readable = require('stream').Readable;
 
-function BetterLog (opts) {
+function BetterLog (section) {
 
-  Readable.call(this, opts);
-
-  this.controller    = opts.controller    || null;
-  this.section       = opts.section       || 'general';
+  Readable.call(this);
   
+  this.section    = section || 'general';
   this.started    = false;
-  this._display   = {};
   this._unwritten = [];
 
 }
