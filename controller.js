@@ -204,9 +204,8 @@ var _getOutputStream = function (section, type) {
 }
 
 var _refreshMorgan = function (opts) {
-  opts = Object.assign(opts || {}, {
-    stream: _getOutputStream('morgan', 'morgan')
-  });
+  opts = opts || {};
+  opts.stream = _getOutputStream('morgan', 'morgan')
   morgan.token('datefmt', function () {
     return datefmt(new Date(), _display.dateformat);
   });
