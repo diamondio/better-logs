@@ -99,7 +99,7 @@ log.mode('silent')
 By default, we've defined a few formats for convenience, but you can go a step further and define your own formats too.
 
 ```
-log.dateformat = 'HH:MM';
+log.display('dateformat', 'HH:MM');
 log.format('custom', '{{file}}:{{line}} custom: {{message}} {{timestamp}}');
 ```
 
@@ -113,23 +113,25 @@ log.custom('hello');
 All logs are `stream.Readable`, so you can simply pipe them to whatever you want. Alternatively, you can also write output to any Writable stream:
 
 ```
+// Writes all logs to logs.txt (default is process.stdout)
 log.output(fs.createWriteStream('logs.txt'));
+
+// Writes all log.errors to ./error.log
+log.output('error', './error.log');
+
+// Writes all section logs to myWriteStream
 log.output('section', myWriteStream);
-log.output('section/error', myErrorStream); // Hides all log.error
+
+// Writes all errors in section to myErrorStream
+log.output('section/error', myErrorStream);
 ```
 
 
 ## Full Documentation
 
-- `config(options)` - Takes an object of options. Valid properties are:
-     - `overrideConsole` (boolean) - allows the user to override the console to use `better-logs` instead.
-     - `showByDefault` (boolean) - show logs by default (if false, hides by default)
-     - `mode` (string) - active mode
-     - `modes` (object) - object where the key is the mode name, and the value is an object containing: `showByDefault`, `hide` and/or `show`.
 - `hide([section])` - Hides all logs. If a section/group string is provided, it would only hide those logs.
 - `show([section])` - Shows all logs. If a section/group string is provided, it would only show those logs.
 - `reset()` - Resets all visibility back to its default state.
-- `reset([section])` - Resets the visibility state back to the default inherited state. If a section/group string is provided, it would only reset those logs.
 - `modes()` - Returns all defined modes
 - `mode()` - Returns current active mode
 - `mode(modeName)` - Sets the active mode
