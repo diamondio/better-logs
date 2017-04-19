@@ -23,6 +23,7 @@ var log = require('better-logs')('section');
 log.format('awesome', '{{timestamp}} AWESOME: {{message}}\n');
 log.awesome('custom format');
 
+log.debug('debug stuff');
 log.info('test');
 log.warn('warning');
 log.error('error with stack');
