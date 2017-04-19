@@ -25,6 +25,7 @@ var _display = {
 var _outputs = {
   _default: {
     _default: process.stdout,
+    error: process.stderr,
   }
 };
 
